@@ -11,7 +11,7 @@ var searchData=
   ['isempty',['IsEmpty',['../classbayeslib_1_1_var_set.html#af49d8564dfd81aa6ac03fec306d5e93b',1,'bayeslib::VarSet::IsEmpty()'],['../classbayeslib_1_1_factor.html#a854973dc5b724ab828a683df5f90d32b',1,'bayeslib::Factor::IsEmpty()'],['../classbayeslib_1_1_factor_set.html#af24ac77fae2e769ff342f2954b288f91',1,'bayeslib::FactorSet::IsEmpty()']]],
   ['isnull',['IsNull',['../classbayeslib_1_1_var.html#afd23dc9869b10d7fd4850d3a7f1b414a',1,'bayeslib::Var']]],
   ['isp_5fexample_2ecpp',['isp_example.cpp',['../isp__example_8cpp.html',1,'']]],
-  ['ispdecisionexample',['IspDecisionExample',['../isp__example_8cpp.html#a1f03d4375fbfcc9401e7fef389b2edb6',1,'IspDecisionExample():&#160;isp_example.cpp'],['../test1_2test1_8cpp.html#a1f03d4375fbfcc9401e7fef389b2edb6',1,'IspDecisionExample():&#160;isp_example.cpp']]],
-  ['isptest1',['IspTest1',['../isp__example_8cpp.html#af09e20bec9b82ea04e6189db1677f993',1,'IspTest1():&#160;isp_example.cpp'],['../test1_2test1_8cpp.html#af09e20bec9b82ea04e6189db1677f993',1,'IspTest1():&#160;isp_example.cpp']]],
-  ['isptest2',['IspTest2',['../isp__example_8cpp.html#a884345018fac8c47de160a7f83f9b4e8',1,'IspTest2():&#160;isp_example.cpp'],['../test1_2test1_8cpp.html#a884345018fac8c47de160a7f83f9b4e8',1,'IspTest2():&#160;isp_example.cpp']]]
+  ['ispdecisionexample',['IspDecisionExample',['../isp__example_8cpp.html#a1f03d4375fbfcc9401e7fef389b2edb6',1,'IspDecisionExample():&#160;isp_example.cpp'],['../tests_2test1_8cpp.html#a1f03d4375fbfcc9401e7fef389b2edb6',1,'IspDecisionExample():&#160;isp_example.cpp']]],
+  ['isptest1',['IspTest1',['../isp__example_8cpp.html#af09e20bec9b82ea04e6189db1677f993',1,'IspTest1():&#160;isp_example.cpp'],['../tests_2test1_8cpp.html#af09e20bec9b82ea04e6189db1677f993',1,'IspTest1():&#160;isp_example.cpp']]],
+  ['isptest2',['IspTest2',['../isp__example_8cpp.html#a884345018fac8c47de160a7f83f9b4e8',1,'IspTest2():&#160;isp_example.cpp'],['../tests_2test1_8cpp.html#a884345018fac8c47de160a7f83f9b4e8',1,'IspTest2():&#160;isp_example.cpp']]]
 ];
