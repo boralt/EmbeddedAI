@@ -1,0 +1,25 @@
+SHELL = /bin/sh
+CC    = gcc
+FLAGS        =  -I../include -I../../libs/json
+CFLAGS       = -fPIC -pedantic -Wall -Wextra -march=native -ggdb3 -shared
+DEBUGFLAGS   = -O0 -D _DEBUG
+RELEASEFLAGS = -O2 -D NDEBUG -combine -fwhole-program
+LDFLAGS= -shared
+
+TARGET  = libbey.so
+SOURCES = $(shell echo ./*.cpp)
+SOURCES += ../../libs/json/jsoncpp.cpp
+HEADERS = $(shell echo ./*.h)
+OBJECTS = $(SOURCES:.c=.o)
+
+LIBS = -lstdc++
+
+PREFIX = ../build
+BINDIR = $(PREFIX)/bin
+
+
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(CC) $(FLAGS) $(CFLAGS) $(DEBUGFLAGS) $(LIBS) -o $(TARGET) $(OBJECTS)

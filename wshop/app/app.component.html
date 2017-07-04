@@ -1,0 +1,33 @@
+ <nav class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Workshop</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li role="presentation"><a [routerLink]="['/cfgEditComponent']">CFG</a></li>
+      <li role="presentation"><a [routerLink]="['/viewFactorsComponent']">View Factors</a></li>
+      <li role="presentation"><a [routerLink]="['/editFactorsComponent', '111']">Edit Factors</a></li>
+    </ul>
+  </div>
+</nav>
+  
+<div class="container" style="margin-top:50px">
+  <router-outlet></router-outlet>
+<!--
+  <h3>Fixed Navbar</h3>
+  <div class="row">
+    <div class="col-md-4">
+      <p> Sheet </p>    
+    </div>
+    <div class="col-md-4"> 
+      <p>A fixed navigation bar stays visible in a fixed position (top or bottom) independent of the page scroll.</p>
+      <p>A fixed navigation bar stays visible in a fixed position (top or bottom) independent of the page scroll.</p>
+    </div>
+    <div class="col-md-4"> 
+      <p>A fixed navigation bar stays visible in a fixed position (top or bottom) independent of the page scroll.</p>
+      <p>A fixed navigation bar stays visible in a fixed position (top or bottom) independent of the page scroll.</p> 
+    </div>
+  </div> -->
+</div>
+

@@ -1,0 +1,33 @@
+SHELL = /bin/sh
+CC    = gcc
+FLAGS        =  -I../../src -I../../../libs/json
+CFLAGS       = -fPIC -pedantic -Wall -Wextra -march=native -ggdb3
+DEBUGFLAGS   = -O0 -D _DEBUG
+RELEASEFLAGS = -O2 -D NDEBUG -combine -fwhole-program
+LDFLAGS= -shared
+
+TARGET  = test1
+SOURCES = $(shell echo ./*.cpp)
+LIB = ../../src/libbey.so
+
+SOURCE_PRECOMP = stdafx.h
+PRECOMP_HEADER = $(SOURCE_PRECOMP:.h=.h.gch)
+
+HEADERS = $(shell echo ./*.h)
+OBJECTS = $(SOURCES:.c=.o)
+
+LIBS = -L../../src  -lstdc++ -lbey
+
+PREFIX = ../build
+BINDIR = $(PREFIX)/bin
+
+
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS) $(PRECOMP_HEADER) $(LIB)
+	$(CC) $(FLAGS) $(CFLAGS) $(DEBUGFLAGS) $(LIBS) -o $(TARGET) $(OBJECTS)
+
+$(PRECOMP_HEADER): $(SOURCE_PRECOMP)
+	$(CC) -c $< -o $@
+

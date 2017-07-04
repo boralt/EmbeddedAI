@@ -1,0 +1,17 @@
+<h1>cfg-edit</h1>
+  <p>
+    <ul>
+      <li *ngFor="let v of vars; let i = index; let last = last">
+      {{v}}
+      </li>
+    </ul>
+
+    <input #addedVar type="text"><br/>
+  
+   <p><button class="btn btn-default" (click)="onAddVar(addedVar.value)">Add</button>
+  <p>
+    <div class="text-center">
+    
+
+    </div>
+

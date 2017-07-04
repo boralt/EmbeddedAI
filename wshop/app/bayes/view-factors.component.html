@@ -1,0 +1,21 @@
+<h1>view factors</h1>
+  <p>
+    <div class="form-group">
+    <label for="sel1">Available Vars:</label>
+    <select class="form-control" [ngModel]="selectedVar" (ngModelChange)="onChangeVar($event)" name="selV">
+      <option [value]="i" *ngFor="let i of arListVars">{{i}}</option>
+    </select>
+    </div>
+  
+    <p><button type="button" class="btn btn-default" (click)="onAddFactor()">Add</button>
+    <p>
+    <div class="form-group">
+      <ul>
+        <li *ngFor="let v of arListFactors; ">
+          {{v}}  <button type="button" class="btn btn-default" (click)="onEditFactor( [v] )">Edit</button>
+          
+
+        </li>
+      </ul>
+
+    </div>

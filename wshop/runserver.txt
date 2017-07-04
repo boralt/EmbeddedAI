@@ -1,0 +1,1 @@
+c:\proj\b\art\win\Debug>c:\Python27\python.exe -m CGIHTTPServer 80
