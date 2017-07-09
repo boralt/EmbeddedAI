@@ -44,6 +44,8 @@ typedef uint64_t u64;
 typedef u32 InstanceId;
 typedef unsigned int VarId;
 typedef float ValueType;
+// Value of variable within its domain definition
+typedef u8 VarState;
 
 template <class T>
 char * AddJsonAttr(char *pBuffer, u32 bufSize, const char *pName, const char *pFormat, T val)

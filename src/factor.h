@@ -85,12 +85,33 @@ namespace bayeslib
 	  /// Get Id
       VarId GetId() { return mId; }
 
+      /// Get Type of Variable
+      /// @return Type of this variable
       VarType GetVarType() const { return mVarType;}
+
+      /// Add state definitionforthis variable
+      /// @param sName name of domain state of this variable
+      /// @return assigned state value 
+      VarState AddState(std::string sName);
+
+      /// Get domain state name 
+      /// @param VarState value
+      /// @return name of the state
+      std::string GetState(VarState state) const;
+
+      /// Get domain state name 
+      /// @param  of the state
+      /// @return VarState value name 
+      VarState GetState(std::string sStateName) const;
+
+      int GetDomainSize() const { return mVarDomainStates.size(); }
 
        protected:
        std::string mName;
        VarId mId;
        VarType mVarType;
+       std::vector<std::string> mVarDomainStates;
+
    };
 
    /** Subset of Nodes on a Graph
@@ -215,7 +236,19 @@ namespace bayeslib
 
    protected:
 
-      std::list<VarId> mList;
+      class VarOperator
+      {
+      public:
+
+         VarOperator(VarId id, u8 var_size, InstanceId idMultiplier);
+
+         VarId mId;
+         InstanceId mMultiplier;
+         int mSize;
+      };
+
+
+      std::list<VarOperator> mList;
 
 	  // optimization mapping of VarId to indexin mList
 	  std::array<int, MAX_SET_SIZE> mOffsetMapping; 
@@ -237,7 +270,7 @@ namespace bayeslib
        /// Add variabe to VarDb
        /// @param sName name of variable
        /// @vtype typeof variable
-       void AddVar(std::string sName, VarType vtype = VarType_Normal);
+       void AddVar(Var v);
 
        /// Find if variable exists in VarDb
        /// @param sName name of variable to check
@@ -274,7 +307,7 @@ namespace bayeslib
        using VarMap = std::map<std::string, VarId>; 
        VarMap mMap;
 
-       std::vector<std::string> mAr;
+       std::vector<Var> mAr;
        std::vector<VarType> mArVarTypes;
 
    };
@@ -284,7 +317,7 @@ namespace bayeslib
    struct ClauseInitializer
    {
       VarId varid;    ///< VarId of variable inside the clause 
-      bool bState;    ///< state of variable inside a clause
+      VarState nState;    ///< state of variable inside a clause
    };
    
    /// Clause is one instance/occurance for VarSet (subset of domain variables)
@@ -334,17 +367,17 @@ namespace bayeslib
        /// Add Variable to the Clause and assign it the value
        /// @param id VarId to variable to add. If variable already in the Clause, just set its value
        /// @param bVal value to set
-       void AddVar(VarId id, bool bVal);
+       void AddVar(VarId id, VarState nVal);
 
        /// Set value to variable in the set
        /// @param id If variable already in the Clause,  sets its value. Otherwiae NoOp
        /// @param bVal value to set
-       void SetVar(VarId id, bool bVal);
+       void SetVar(VarId id, VarState nVal);
 
        /// Get value of variable in the clause
        /// @param vid VarId of value to get
        /// @return value of #vid if present in VarSet, false otherwise
-       bool GetVar(VarId vid) const;
+       VarState GetVar(VarId vid) const;
 
        /// Move this clause to next possible instance, wrappped around to 0 (all Variables are set to false)
        /// @return true if wraparound has occured
@@ -355,8 +388,8 @@ namespace bayeslib
        bool Decr();
 
        /// Same        /// @param vid VarId of value to get
-       /// @return value of #vid if present in VarSet, false otherwise   
-	    bool operator [](VarId vid)  const { return GetVar(vid); }
+       /// @return value of #vid if present in VarSet   
+	    VarState operator [](VarId vid)  const { return GetVar(vid); }
 
        /// Get VarSet of the Clause
        /// @return VarSet subset of Domain Variables
@@ -392,7 +425,7 @@ namespace bayeslib
        protected:
        void UpdateClause();
 
-       std::bitset<MAX_SET_SIZE> mClause;
+       // std::bitset<MAX_SET_SIZE> mClause;
        InstanceId mInstanceId;
        VarSet mVarSet; 
 
@@ -682,7 +715,6 @@ namespace bayeslib
    /// values to insure 1.0 sum of probabilities for same Tail Clause instances
    /// @ingroup API
    inline void fin(std::shared_ptr<Factor> f)
-   {
 	   f->CompleteProbabilities();
    }
 
