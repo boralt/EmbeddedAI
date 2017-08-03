@@ -715,6 +715,7 @@ namespace bayeslib
    /// values to insure 1.0 sum of probabilities for same Tail Clause instances
    /// @ingroup API
    inline void fin(std::shared_ptr<Factor> f)
+   {
 	   f->CompleteProbabilities();
    }
 
