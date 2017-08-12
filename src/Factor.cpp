@@ -34,7 +34,7 @@ Factor::Init()
 {
 	mFactorType = VarType_Normal;
 
-    mFactorSize = 1 << mSet.GetSize();
+    mFactorSize = mSet.GetInstances();
     int index= 0;
     for(VarId id=mSet.GetFirst(); id != 0; id = mSet.GetNext(id))
     {        

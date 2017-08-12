@@ -638,7 +638,7 @@ namespace bayeslib
      /// @param v VarId of variable to eliminate
      /// @param val value of variable that matches rows that will be retained in returned VarSet
      /// @return Factor with eliminated variable
-     std::shared_ptr<Factor> PruneEdge(VarId v, bool val);
+     std::shared_ptr<Factor> PruneEdge(VarId v, VarState val);
 
       // from UIElem
       /// produce Json representation of the Factor
