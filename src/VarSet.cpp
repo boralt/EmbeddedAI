@@ -16,18 +16,21 @@ using namespace bayeslib;
 
 
 
-VarSet::VarSet()
+VarSet::VarSet() :
+   mCachedInstances(0)
 {
 	mOffsetMapping.fill(-1);
 }
 
-VarSet::VarSet(const VarId v)
+VarSet::VarSet(const VarId v) :
+   mCachedInstances(0)
 {
 	mOffsetMapping.fill(-1);
 	Add(v);
 }
 
-VarSet::VarSet(std::initializer_list<VarId> initlist)
+VarSet::VarSet(std::initializer_list<VarId> initlist) :
+   mCachedInstances(0)
 {
 	mOffsetMapping.fill(-1);
 	for (auto iter = initlist.begin(); iter != initlist.end(); ++iter)
@@ -54,16 +57,25 @@ bool VarSet::operator ==(const VarSet &another) const
 }
 
 
+void 
+VarSet::_Add(VarId id)
+{ 
+	if (!HasVar(id))
+	{
+		mList.push_back(id);
+		mOffsetMapping[id] = mList.size()-1;
+
+        // invalidate the cache
+        mCachedInstances = 0;
+	}
+}
+
 
 void 
 VarSet::Add(VarId id)
 { 
 	DBC_CHECK_VID(id);
-	if (!HasVar(id))
-	{
-		mList.push_back(id);
-		mOffsetMapping[id] = mList.size()-1;
-	}
+    _Add(id);
 }
 
 void
@@ -71,12 +83,7 @@ VarSet::Add(const VarSet &vs)
 {
 	for (VarId vid = vs.GetFirst(); vid != 0; vid = vs.GetNext(vid))
 	{
-
-		if (!HasVar(vid))
-		{
-			mList.push_back(vid);
-			mOffsetMapping[vid] = mList.size() - 1;
-		}
+       _Add(vid);
 	}
 }
 
@@ -96,7 +103,8 @@ VarSet::Remove(VarId id)
 		   {
 			   mOffsetMapping[*it]--;
 		   }
-	   
+
+           mCachedInstances = 0;
 		 break;
       }
    }
@@ -110,7 +118,7 @@ VarSet::MergeIn(const VarSet &another)
             id!=0; 
             id =another.GetNext(id))
    {
-	   Add(id);
+	   _Add(id);
    }
 }
 
@@ -174,9 +182,27 @@ VarSet::GetSize() const
    return mList.size();
 }
 
-InstanceId VarSet::GetInstances() const
+
+
+InstanceId VarSet::_GetInstances(const VarDb &db) const
 {
-   return (unsigned int) (0x1UL << GetSize());
+   InstanceId res = 1;
+   for(auto it = mList.begin(); 
+            it != mList.end(); 
+            ++it)
+   {
+      res *= db[*it].GetDomainSize();
+   }
+   return res;
+}
+
+InstanceId VarSet::GetInstances(const VarDb &db) const
+{
+   if(!mCachedInstances)
+   {
+      mCachedInstances = _GetInstances(db);
+   }
+   return mCachedInstances;
 }
 
 

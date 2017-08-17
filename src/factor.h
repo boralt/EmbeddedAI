@@ -143,7 +143,7 @@ namespace bayeslib
      /// Compare varsets
 	  bool operator ==(const VarSet &another) const;
 
-	  /// Add variable to VarSet
+	 /// Add variable to VarSet
      /// @param id variable to add to VarSet
      void Add(VarId id);
 
@@ -189,7 +189,6 @@ namespace bayeslib
       unsigned int GetSize() const;
 
       /// Number of clauses defined by this Varset
-      /// it is normally 2**GetSize()
       /// @return number of istances of Clauses in this VarSet
       InstanceId GetInstances() const;
 
@@ -209,10 +208,10 @@ namespace bayeslib
       int GetOffs(VarId varid) const;
 
       /// Abbreviated Json output, doesn't resolve VarIds tonames
-	   std::string GetJson() const;
+	  std::string GetJson() const;
 
       // from UIElem
-	   std::string GetJson(VarDb &db) const override;
+	  std::string GetJson(VarDb &db) const override;
       std::string GetType() const override;
 
       /// Test is VarSet is empty
@@ -248,11 +247,15 @@ namespace bayeslib
       };
 
 
+      InstanceId mCachedInstances;
       std::list<VarOperator> mList;
 
 	  // optimization mapping of VarId to indexin mList
 	  std::array<int, MAX_SET_SIZE> mOffsetMapping; 
 
+	  void _Add(const VarSet &another);
+      InstanceId VarSet::_GetInstances() const;
+   
    };
 
    /**
@@ -279,7 +282,7 @@ namespace bayeslib
        /// Map Variable name to VarId
        /// @param s name of variable to search
        /// @return VarId if variable found, 0  otherwise
-       VarId operator[](const std::string &s);
+       VarId operator[](const std::string &s) const;
 
        /// Map Variable id to name
        /// @param id VarId to search
@@ -351,7 +354,7 @@ namespace bayeslib
        /// @param vs VarSet of variavles in this VarSet
        /// @param clause is a bitset of with values for variables. This bitset is arranged in order of VarIds variables in domain
        ///        and therefore VarSet independent 
-       Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause);
+       // Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause);
 
        /// Construct Clause from VarSet and integral InstanceId 
        /// Since InstanceId is dependent on VarSet order it is usefull to constructing Clauses of same VarSets
@@ -389,7 +392,7 @@ namespace bayeslib
 
        /// Same        /// @param vid VarId of value to get
        /// @return value of #vid if present in VarSet   
-	    VarState operator [](VarId vid)  const { return GetVar(vid); }
+	   VarState operator [](VarId vid)  const { return GetVar(vid); }
 
        /// Get VarSet of the Clause
        /// @return VarSet subset of Domain Variables
