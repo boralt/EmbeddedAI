@@ -29,8 +29,8 @@ bool ValToBool(const Json::Value &v)
       return false;
 }
 
-Clause::Clause() :
-   mInstanceId(0)
+Clause::Clause(const VarDb &db) :
+   mInstanceId(0), mVarSet(db)
 {
 }
 
@@ -52,45 +52,48 @@ Clause::Clause(const VarSet &vs, Json::Value &v) :
       
       if(i < v.size())
       {
-         bool b = ValToBool(v[i]);
-         mClause[id] = b;
-         if(b)
-            mInstanceId += ((InstanceId) 1 << i);
+         VarState v = mVarSet.GetDb().JsonValToState(id, v[i]);
+         mClause[id] = v;
+         if(v)
+            mInstanceId += (InstanceId) v  * mVarSet.GetInstanceComponent(id, v);
       }
    }
 }
 
-Clause::Clause(std::initializer_list<ClauseInitializer> initlist)
+Clause::Clause(const VarDb &db, std::initializer_list<ClauseInitializer> initlist) :
+   mVarSet(db)
 {
    for (auto iter = initlist.begin(); iter != initlist.end(); ++iter)
    {
-      AddVar(iter->varid, iter->bState);
+      AddVar(iter->varid, iter->nState);
    }
 }
 
 
 void 
-Clause::SetVar(VarId id, bool bVal)
+Clause::SetVar(VarId id, VarState val)
 {
    assert(id>0);
-   bool bCurVal = mClause[id];
+   VarState curVal = mClause[id];
    int nOffs = mVarSet.GetOffs(id);
 
    assert(nOffs >= 0);
    if( nOffs < 0)
       return;
 
-   if(bCurVal && !bVal)
+   if(curVal != val)
    {
-      mClause.reset(id);
-      mInstanceId &= ~( ((InstanceId) 1) << nOffs);
+      InstanceId oldInstanceComponent = mVarSet.GetInstanceComponent(id, curVal);
+      InstanceId newInstanceComponent = mVarSet.GetInstanceComponent(id, val);
+      mInstanceId -= oldInstanceComponent;
+      mInstanceId += newInstanceComponent;
+      mClause[id] = val;
    }
-   else if (!bCurVal && bVal)
-   {
-      mClause.set(id);
-      mInstanceId |= ( ((InstanceId) 1) << nOffs);
-   }
+
 }
+
+// !!!!!!!!!!!!! Stopping point
+
 
 void
 Clause::AddVar(VarId id, bool bVal)

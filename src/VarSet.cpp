@@ -276,7 +276,7 @@ VarSet::Disjuction(const VarSet &vs) const
 VarSet 
 VarSet::Substract(const VarSet &vs) const
 {
-   VarSet res;
+   VarSet res(mDb);
    for(VarId id= GetFirst(); 
       id != 0; 
       id = GetNext(id))

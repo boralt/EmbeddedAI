@@ -207,6 +207,21 @@ namespace bayeslib
       ///         returns 0 if variableis not present in this VarSet
       int GetOffs(VarId varid) const;
 
+
+      /// Get contribution of VarId to the Instance value of VarSe
+      /// @param id VarId id of variable
+      /// @param v  VarState state of Variable in its domain
+      /// @return contribution of this variable in InsecnceId value of clause based on this VarSet
+      InstanceId GetInstanceComponent(VarId id, VarState v)
+      {
+         int offs = mOffsetMapping[id];
+         if (offs < 0)
+            return 0;
+
+         return _GetByOffset(offs).mMultiplier;
+
+      }
+
       /// Abbreviated Json output, doesn't resolve VarIds tonames
 	  std::string GetJsonAbbrev() const;
 
@@ -228,10 +243,14 @@ namespace bayeslib
       /// @return result of union between two VarSets
       VarSet Disjuction(const VarSet &vs) const;
 
-      // Create VarSet that includes all variables in this VarSet not present in another VarSet
+      /// Create VarSet that includes all variables in this VarSet not present in another VarSet
       /// @param vs VarSet will be substracted from this VarSet
       /// @return result of substraction from this VarSet
       VarSet Substract(const VarSet &vs) const;
+
+      /// Get DB that this VarSet is based on
+      /// @return VarDb
+      const VarDb &GetDb() const { return mDb;}
 
    protected:
 
@@ -246,7 +265,7 @@ namespace bayeslib
          int mSize;
       };
 
-
+      const VarOperator & _GetByOffset(int offs);
       InstanceId mCachedInstances;
       std::list<VarOperator> mList;
 
@@ -315,6 +334,8 @@ namespace bayeslib
          return NullVar();
       }
 
+      VarState JsonValToState(VarId id, const Json::Value &v) const;
+
        protected:
        using VarMap = std::map<std::string, VarId>; 
        VarMap mMap;
@@ -350,7 +371,7 @@ namespace bayeslib
        
        /// Empty constructor. 
        /// Constructs Clause with empty VarSet
-       Clause();
+       Clause(const VarDb &db);
 
        /// Construct Clause from VarSet
        /// the instanceId is assigned to 0 -- all Variables in VarSet are false 
@@ -379,7 +400,7 @@ namespace bayeslib
 
        /// Construct Clause with list of ClauseInitializers
        /// @param initlist initializer list of ClauseInitializers 
-       Clause(std::initializer_list<ClauseInitializer> initlist);
+       Clause(const VarDb &db, std::initializer_list<ClauseInitializer> initlist);
 
        /// Add Variable to the Clause and assign it the value
        /// @param id VarId to variable to add. If variable already in the Clause, just set its value
@@ -442,7 +463,7 @@ namespace bayeslib
        protected:
        void UpdateClause();
 
-       // std::bitset<MAX_SET_SIZE> mClause;
+       std::array<VarState, MAX_SET_SIZE> mClause;
        InstanceId mInstanceId;
        VarSet mVarSet; 
 
