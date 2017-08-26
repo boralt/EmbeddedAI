@@ -123,7 +123,7 @@ namespace bayeslib
 
    public:
 	  /// Constructor for Empty varset
-     VarSet();
+     VarSet(const VarDb &db);
 
 	  // Copy Constructor
      //VarSet(const VarSet &vs) : mList(vs.mList) {}
@@ -131,11 +131,11 @@ namespace bayeslib
 
 	  /// Construct VarSet with single variable.
      /// @param v variable id in varset 
-	  VarSet(const VarId v);
+	  VarSet(const VarDb &db, const VarId v);
 
 	  /// Constuct with initializer list of variable ids
      /// @param initlist {} list of variables
-	  VarSet(std::initializer_list<VarId> initlist);
+	  VarSet(const VarDb &db, std::initializer_list<VarId> initlist);
 
 	  /// Default Destructor 
      virtual ~VarSet() = default;
@@ -176,13 +176,13 @@ namespace bayeslib
      /// @param vdb reference to database of all Variables in the graph
      /// @param vartype VarType to search in this VarSet
      /// @return true if vartype is present 
-     bool HasVarType(const VarDb &vdb, VarType vartype) const;
+     bool HasVarType(VarType vartype) const;
 
 	  /// produce a subsetof varset with vartype variables
      /// @param vdb reference to database of all Variables in the graph
      /// @param vartype VarType to search in this VarSetset of #vartype type
      /// @return VarSet containing variables in this Var
-	  VarSet FilterVarSet(const VarDb &vdb, VarType vartype);
+	  VarSet FilterVarSet(VarType vartype);
 
 	  /// Get Number of variables
      /// @return Number variales is VarSet
@@ -208,10 +208,10 @@ namespace bayeslib
       int GetOffs(VarId varid) const;
 
       /// Abbreviated Json output, doesn't resolve VarIds tonames
-	  std::string GetJson() const;
+	  std::string GetJsonAbbrev() const;
 
       // from UIElem
-	  std::string GetJson(VarDb &db) const override;
+	  std::string GetJson() const override;
       std::string GetType() const override;
 
       /// Test is VarSet is empty
@@ -250,12 +250,12 @@ namespace bayeslib
       InstanceId mCachedInstances;
       std::list<VarOperator> mList;
 
-	  // optimization mapping of VarId to indexin mList
-	  std::array<int, MAX_SET_SIZE> mOffsetMapping; 
-
-	  void _Add(const VarSet &another);
+	   // optimization mapping of VarId to indexin mList
+      std::array<int, MAX_SET_SIZE> mOffsetMapping;
+      void _Add(VarId id);
       InstanceId VarSet::_GetInstances() const;
-   
+      const VarDb &mDb;
+
    };
 
    /**
@@ -306,12 +306,26 @@ namespace bayeslib
       /// @return VarType of variable
       VarType GetVarType(VarId id) const ;
 
+      Var GetVar(VarId id) const
+      {
+         if(mAr.size() > id)
+         {
+            return mAr[id];
+         }
+         return NullVar();
+      }
+
        protected:
        using VarMap = std::map<std::string, VarId>; 
        VarMap mMap;
 
        std::vector<Var> mAr;
        std::vector<VarType> mArVarTypes;
+      Var NullVar()
+      {
+         return Var("null", 0);
+      }
+
 
    };
             

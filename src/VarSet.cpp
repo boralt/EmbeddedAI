@@ -16,21 +16,21 @@ using namespace bayeslib;
 
 
 
-VarSet::VarSet() :
-   mCachedInstances(0)
+VarSet::VarSet(const VarDb &db) :
+   mCachedInstances(0), mDb(db)
 {
 	mOffsetMapping.fill(-1);
 }
 
-VarSet::VarSet(const VarId v) :
-   mCachedInstances(0)
+VarSet::VarSet(const VarDb &db, const VarId v) :
+   mCachedInstances(0), mDb(db)
 {
 	mOffsetMapping.fill(-1);
 	Add(v);
 }
 
-VarSet::VarSet(std::initializer_list<VarId> initlist) :
-   mCachedInstances(0)
+VarSet::VarSet(const VarDb &db, std::initializer_list<VarId> initlist) :
+   mCachedInstances(0), mDb(db)
 {
 	mOffsetMapping.fill(-1);
 	for (auto iter = initlist.begin(); iter != initlist.end(); ++iter)
@@ -48,7 +48,7 @@ bool VarSet::operator ==(const VarSet &another) const
 	for (auto iter = mList.begin();
 		iter != mList.end(); ++iter)
 	{
-		if (!another.HasVar(*iter))
+		if (!another.HasVar(iter->mId))
 		{
 			return false;
 		}
@@ -62,11 +62,13 @@ VarSet::_Add(VarId id)
 { 
 	if (!HasVar(id))
 	{
-		mList.push_back(id);
+      // instances until now
+      InstanceId inst = GetInstances();
+      Var v = mDb.GetVar(id);
+		mList.push_back({id, v.GetDomainSize(), inst });
 		mOffsetMapping[id] = mList.size()-1;
-
-        // invalidate the cache
-        mCachedInstances = 0;
+      // invalidate the cache
+      mCachedInstances = 0;
 	}
 }
 
@@ -75,7 +77,7 @@ void
 VarSet::Add(VarId id)
 { 
 	DBC_CHECK_VID(id);
-    _Add(id);
+   _Add(id);
 }
 
 void
@@ -133,11 +135,11 @@ VarSet::HasVar(VarId id) const
 }
 
 bool 
-VarSet::HasVarType(const VarDb &vdb, VarType vartype) const
+VarSet::HasVarType(VarType vartype) const
 {
-   for(std::list<VarId>::const_iterator it = mList.begin(); it != mList.end(); ++it)
+   for(auto it = mList.begin(); it != mList.end(); ++it)
    {
-      if ( vdb.GetVarType(*it) == vartype)
+      if (mDb.GetVarType(it->mId) == vartype)
       {
          return true;
       }
@@ -147,14 +149,14 @@ VarSet::HasVarType(const VarDb &vdb, VarType vartype) const
 
 
 VarSet 
-VarSet::FilterVarSet(const VarDb &vdb, VarType vartype)
+VarSet::FilterVarSet(VarType vartype)
 {
-	VarSet res;
+	VarSet res(mDb);
 	for (auto it = mList.begin(); it != mList.end(); ++it)
 	{
 		if (vdb.GetVarType(*it) == vartype)
 		{
-			res.Add(*it);
+			res.Add(it->mId);
 		}
 	}
 	return res;
@@ -168,7 +170,7 @@ VarSet::HasVar(const VarSet &another) const
             it != mList.end(); 
             ++it)
    {
-      if (another.HasVar(*it)) 
+      if (another.HasVar(it->mId))
       {
          return true;
       }
@@ -184,19 +186,19 @@ VarSet::GetSize() const
 
 
 
-InstanceId VarSet::_GetInstances(const VarDb &db) const
+InstanceId VarSet::_GetInstances() const
 {
    InstanceId res = 1;
    for(auto it = mList.begin(); 
             it != mList.end(); 
             ++it)
    {
-      res *= db[*it].GetDomainSize();
+      res *= it->mSize;
    }
    return res;
 }
 
-InstanceId VarSet::GetInstances(const VarDb &db) const
+InstanceId VarSet::GetInstances() const
 {
    if(!mCachedInstances)
    {
@@ -219,7 +221,7 @@ VarSet::GetFirst() const
 {
    if(GetSize())
    {
-      return *(mList.begin());
+      return mList.begin()->mId;
    }
    return 0;
 }
@@ -231,13 +233,13 @@ VarSet::GetNext(VarId id) const
       it != mList.end(); 
       ++it)
    {
-      if (*it == id)
+      if (it->mId == id)
       {
          ++it;
          
          if (it == mList.end())
             return 0;
-         return *it;
+         return it->mId;
       }
    }
    return 0;
@@ -246,7 +248,7 @@ VarSet::GetNext(VarId id) const
 VarSet 
 VarSet::Conjuction(const VarSet &vs) const
 {
-   VarSet res;
+   VarSet res(mDb);
    for(VarId id= vs.GetFirst(); 
       id != 0; 
       id = vs.GetNext(id))
@@ -288,14 +290,14 @@ VarSet::Substract(const VarSet &vs) const
 
 
 std::string 
-VarSet::GetJson(VarDb &db) const
+VarSet::GetJson() const
 {
    std::string s;
    s = "[ ";
    for(auto it = mList.begin(); it != mList.end(); ++it)
    {
       char sz[20];
-      snprintf(sz, sizeof(sz), "%s", db[*it].c_str() );
+      snprintf(sz, sizeof(sz), "%s", mDb[it->mId].c_str() );
       s += sz;
       s += ",";
    }   
@@ -306,7 +308,7 @@ VarSet::GetJson(VarDb &db) const
 
 
 std::string
-VarSet::GetJson() const
+VarSet::GetJsonAbbrev() const
 {
    std::string s;
    s = "[ ";
@@ -321,7 +323,6 @@ VarSet::GetJson() const
    s += "]";
    return s;
 }
-
 
 
 std::string 
