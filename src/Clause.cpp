@@ -92,11 +92,9 @@ Clause::SetVar(VarId id, VarState val)
 
 }
 
-// !!!!!!!!!!!!! Stopping point
-
 
 void
-Clause::AddVar(VarId id, bool bVal)
+Clause::AddVar(VarId id, VarState val)
 {
    int nOffs = mVarSet.GetOffs(id);
    if (nOffs < 0)
@@ -105,23 +103,12 @@ Clause::AddVar(VarId id, bool bVal)
       nOffs = mVarSet.GetOffs(id);
    }
 
-   bool bCurVal = mClause[id];
-   
-   if (bCurVal && !bVal)
-   {
-      mClause.reset(id);
-      mInstanceId &= ~(((InstanceId)1) << nOffs);
-   }
-   else if (!bCurVal && bVal)
-   {
-      mClause.set(id);
-      mInstanceId |= (((InstanceId)1) << nOffs);
-   }
+   SetVar(id, val);
 }
 
 
 
-bool 
+VarState
 Clause::GetVar(VarId id) const
 {
    return mClause[id];
@@ -130,6 +117,7 @@ Clause::GetVar(VarId id) const
 InstanceId 
 Clause::GetInstanceId(const VarSet &another) const
 {
+   // correlate this varset with another
 	Clause cl(another);
 	for (VarId id = mVarSet.GetFirst();
 		id != 0;
@@ -145,8 +133,10 @@ Clause::GetInstanceId(const VarSet &another) const
 bool
 Clause::Incr()
 {
+
+
    bool bRes = false;
-   InstanceId idMax = ((InstanceId) 1 << mVarSet.GetSize());
+   InstanceId idMax = mVarSet.GetInstances();
    InstanceId tmpId = mInstanceId + 1;
    if (tmpId >= idMax)
    {
@@ -162,7 +152,7 @@ bool
 Clause::Decr()
 {
    bool bRes = false;
-   InstanceId idMax = ((InstanceId) 1 << mVarSet.GetSize());
+   InstanceId idMax = mVarSet.GetInstances();
    InstanceId tmpId = mInstanceId -1;
    if (mInstanceId == 0)
    {
@@ -178,21 +168,11 @@ Clause::Decr()
 void 
 Clause::UpdateClause()
 {
-   std::bitset<MAX_SET_SIZE> newclause;
-   InstanceId i = 1;
-   for(VarId id = mVarSet.GetFirst();
-      id  != 0;
-      id = mVarSet.GetNext(id), i <<= 1)   
-   {
-      
-      if(mInstanceId & i)
-         newclause.set(id);      
-   }  
-   mClause = newclause; 
+   mClause = mVarSet.ConvertVarArray(mInstanceId);
 }
 
 
-Clause::Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause) :
+Clause::Clause(const VarSet &vs, const std::array<VarState ,MAX_SET_SIZE> &clause) :
       mInstanceId(0), mVarSet(vs) 
 {
    int i=0;
@@ -200,12 +180,9 @@ Clause::Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause) :
       id != 0;
       id = mVarSet.GetNext(id), i++)   
    {
-
-      if(clause[id])
-      {
-         mClause.set(id);
-         mInstanceId += ( (InstanceId)1 << i);
-      }      
+      VarState v = clause[id];
+      mClause[id] = v ;
+      mInstanceId += mVarSet.GetInstanceComponent(id, v);
    }
 }
 
@@ -213,17 +190,7 @@ Clause::Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause) :
 Clause::Clause(const VarSet &vs, InstanceId iid) :      
        mInstanceId(iid), mVarSet(vs)
 {
-   int i=0;
-   for(VarId id = mVarSet.GetFirst();
-      id != 0;
-      id = mVarSet.GetNext(id), i++)   
-   {
-      
-      if(iid & ((InstanceId) 1 << i))
-      {
-         mClause.set(id);
-      }      
-   }      
+   UpdateClause();
 }
 
 std::string
@@ -233,7 +200,7 @@ Clause::GetType() const
 }
 
 std::string
-Clause::GetJson(VarDb &db) const
+Clause::GetJson() const
 {
    std::string s;
    s = "{ ";

@@ -202,7 +202,7 @@ InstanceId VarSet::GetInstances() const
 {
    if(!mCachedInstances)
    {
-      mCachedInstances = _GetInstances(db);
+      mCachedInstances = _GetInstances();
    }
    return mCachedInstances;
 }
@@ -215,6 +215,26 @@ VarSet::GetOffs(VarId varid) const
 		return -1;
 	return mOffsetMapping[varid];
 }
+
+
+std::array<VarState, MAX_SET_SIZE>
+VarSet::ConvertVarArray(InstanceId instanceId)
+{
+   std::array<VarState, MAX_SET_SIZE> res;
+
+   for(auto it = mList.begin();
+       it != mList.end();
+       ++it)
+   {
+      VarOperator &op = *it;
+      // fetch value from InstanceId
+      instanceId /= op.mMultiplier;
+      VarState var = instanceId % op.mSize;
+      res[op.mId] = var;
+   }
+   return res;
+};
+
 
 VarId 
 VarSet::GetFirst() const
@@ -329,4 +349,18 @@ std::string
 VarSet::GetType() const
 {
    return "VarSet";
+}
+
+const VarOperator &
+VarSet::_GetByOffset(int offs)
+{
+   for(auto it = mList.begin();
+       it != mList.end();
+       ++it)
+   {
+      if(!offs)
+         return *it;
+      offs--;
+   }
+   return *mList.begin();
 }

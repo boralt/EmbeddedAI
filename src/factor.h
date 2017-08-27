@@ -104,7 +104,7 @@ namespace bayeslib
       /// @return VarState value name 
       VarState GetState(std::string sStateName) const;
 
-      int GetDomainSize() const { return mVarDomainStates.size(); }
+      size_t GetDomainSize() const { return mVarDomainStates.size(); }
 
        protected:
        std::string mName;
@@ -218,9 +218,16 @@ namespace bayeslib
          if (offs < 0)
             return 0;
 
-         return _GetByOffset(offs).mMultiplier;
+         return _GetByOffset(offs).mMultiplier*v;
 
       }
+
+      /// Convert to clause array
+      /// @param instanceId of clause
+      /// @return array of Variable states scaled to maximum allowed varset
+      std::array<VarState, MAX_SET_SIZE> ConvertVarArray(InstanceId instanceId);
+
+
 
       /// Abbreviated Json output, doesn't resolve VarIds tonames
 	  std::string GetJsonAbbrev() const;
@@ -258,7 +265,8 @@ namespace bayeslib
       {
       public:
 
-         VarOperator(VarId id, u8 var_size, InstanceId idMultiplier);
+         VarOperator(VarId id, u8 var_size, InstanceId multiplier) :
+            mId(id), mMultiplier(mMultiplier), mSize(var_size) {}
 
          VarId mId;
          InstanceId mMultiplier;
@@ -402,7 +410,16 @@ namespace bayeslib
        /// @param initlist initializer list of ClauseInitializers 
        Clause(const VarDb &db, std::initializer_list<ClauseInitializer> initlist);
 
-       /// Add Variable to the Clause and assign it the value
+
+      /// Construct clause from Varset and array of Variable values
+      /// @param vs VarSet this varset is based on
+      /// @param clause array of values.
+      /// @note clause paramter doesn't have to exacltly match set in VarSet
+      Clause::Clause(const VarSet &vs, const std::array<VarState ,MAX_SET_SIZE> &clause);
+
+
+
+      /// Add Variable to the Clause and assign it the value
        /// @param id VarId to variable to add. If variable already in the Clause, just set its value
        /// @param bVal value to set
        void AddVar(VarId id, VarState nVal);
@@ -438,9 +455,8 @@ namespace bayeslib
 
       // from UIElem
       /// Get Json representation of this Clause
-      /// @param db DB of variables in this domain
       /// @return string with Json representatin of this clause
-      virtual std::string GetJson(VarDb &)const override;
+      virtual std::string GetJson()const override;
 
       /// return "Clause"
       virtual std::string GetType() const override;
