@@ -59,7 +59,7 @@ namespace bayeslib
          virtual std::string GetType() const = 0;
 
          /// Get JSON presentation of the object
-         virtual std::string GetJson(VarDb &db) const = 0;
+         virtual std::string GetJson(const VarDb &db) const = 0;
    };
 
    /** Define`s a node on a Beysian Graph
@@ -73,17 +73,17 @@ namespace bayeslib
        Var(std::string sName, VarId id, VarType vtype=VarType_Normal);
        
       /// from UIElem
-      std::string GetJson(VarDb &db) const override;
+      std::string GetJson(const VarDb &db) const override;
       std::string GetType() const override;
 
 	  /// Is it a special Null Variable
-      bool IsNull() { return !mId;}
+      bool IsNull() const { return !mId;}
  
 	  /// Get Printable name 
-      const std::string & GetName() { return mName; }
+      const std::string & GetName() const { return mName; }
 
 	  /// Get Id
-      VarId GetId() { return mId; }
+      VarId GetId() const { return mId; }
 
       /// Get Type of Variable
       /// @return Type of this variable
@@ -142,6 +142,14 @@ namespace bayeslib
 
      /// Compare varsets
 	  bool operator ==(const VarSet &another) const;
+
+     VarSet & operator=(const VarSet &another)
+     {
+        mCachedInstances = another.mCachedInstances;
+        mList = another.mList;
+        mOffsetMapping = another.mOffsetMapping;
+     }
+
 
 	 /// Add variable to VarSet
      /// @param id variable to add to VarSet
@@ -233,7 +241,7 @@ namespace bayeslib
 	  std::string GetJsonAbbrev() const;
 
       // from UIElem
-	  std::string GetJson() const override;
+	  std::string GetJson(const VarDb &) const override;
       std::string GetType() const override;
 
       /// Test is VarSet is empty
@@ -297,10 +305,15 @@ namespace bayeslib
        /// Constructor
        VarDb();
       
-       /// Add variabe to VarDb
+       /// Add variabe with boolean domain to VarDb
        /// @param sName name of variable
-       /// @vtype typeof variable
-       void AddVar(Var v);
+       /// @param vtype typeof variable
+	   void AddVar(std::string sName, VarType vtype = VarType_Normal);
+
+	   /// Add Variable with domain to VarDb
+	   /// @param vtype typeof variable
+	   void AddVar(std::string, std::initializer_list<const char *> initlist, VarType vtype = VarType_Normal);
+
 
        /// Find if variable exists in VarDb
        /// @param sName name of variable to check
@@ -314,7 +327,7 @@ namespace bayeslib
        /// Map Variable id to name
        /// @param id VarId to search
        /// @return name if variable found,empty otherwise
-       std::string operator[](VarId id);
+       std::string operator[](VarId id) const;
 
       /// Get Json
       /// @returns Json string with all variables information
@@ -350,7 +363,7 @@ namespace bayeslib
 
        std::vector<Var> mAr;
        std::vector<VarType> mArVarTypes;
-      Var NullVar()
+      static Var NullVar()
       {
          return Var("null", 0);
       }
@@ -456,7 +469,7 @@ namespace bayeslib
       // from UIElem
       /// Get Json representation of this Clause
       /// @return string with Json representatin of this clause
-      virtual std::string GetJson()const override;
+      virtual std::string GetJson(const VarDb &)const override;
 
       /// return "Clause"
       virtual std::string GetType() const override;
@@ -698,7 +711,7 @@ namespace bayeslib
       /// produce Json representation of the Factor
       /// @param VarDb of domain variables
       /// @return string with Json representation of VarSet
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
 
       /// returns "Factor"
       virtual std::string GetType() const override;
@@ -787,7 +800,7 @@ namespace bayeslib
       bool GetDecision(InstanceId);
 
       // from UIElem
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
       virtual std::string GetType() const override;
 
       protected:
@@ -806,7 +819,7 @@ namespace bayeslib
       }
 
       // from UIElem
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
       virtual std::string GetType() const override ;
 
       /// Get Avaialble decisions given input sample
@@ -925,7 +938,7 @@ namespace bayeslib
       /// Get string Json representations of this FactorSet
       /// @param db VarDb database containing domain Variables
       /// @return string containing Json representation of this FactorSet
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
 
       /// Returns "FactorSet"
       virtual std::string GetType() const override;
