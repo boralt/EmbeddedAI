@@ -122,6 +122,54 @@ VarDb::GetJson()
    return s;
 }
 
+
+VarState
+VarDb::JsonValToState(VarId id, const Json::Value &v) const
+{
+   VarState res =0;
+   Var var = GetVar(id);
+   if ( var.IsNull())
+      return res;
+
+   if(v.isIntegral())
+   {
+      res = (VarState) v.asInt();
+      if ( res < var.GetDomainSize())
+      {
+         return res;
+      }
+      else
+      {
+         return 0;
+      }
+   }
+   else if(v.isBool())
+   {
+      if ( var.GetDomainSize() >= 2)
+      {
+         return v.asBool() ? 1: 0;
+      }
+
+      return 0;
+   }
+   else
+   {
+      const char *pStr = v.asCString();
+
+      for(res=0; res < var.GetDomainSize(); res++)
+      {
+         if (!strcmp(pStr, var.GetState(res))
+         {
+            return res;
+         }
+      }
+   }
+
+   return 0;
+
+}
+
+
 std::string 
 VarDb::GetType()
 {

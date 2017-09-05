@@ -200,7 +200,7 @@ Clause::GetType() const
 }
 
 std::string
-Clause::GetJson() const
+GetJson(const VarDb &)const
 {
    std::string s;
    s = "{ ";

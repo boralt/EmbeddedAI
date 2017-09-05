@@ -47,29 +47,28 @@ Factor::Init()
 }
 
 Factor::Factor(const VarSet &vset) : 
-    mSet(vset)
+    mSet(vset), mClauseHead(vset.GetDb()), mExtendedVarSet(vset.GetDb())
 {
     Init();
 }
 
 Factor::Factor(const VarSet &vset, VarId clauseHead) : 
-    mSet(vset)
+    mSet(vset), mClauseHead(vset.GetDb(), {clauseHead}), mExtendedVarSet(vset.GetDb())
 {
-    Init();
     mClauseHead.Add(clauseHead);
 }
 
 
 
 Factor::Factor(const VarSet &vset, VarSet clauseHead) : 
-    mSet(vset), mClauseHead(clauseHead)
+    mSet(vset), mClauseHead(clauseHead), mExtendedVarSet(vset.GetDb())
 {
     Init();
 }
 
 
-Factor::Factor(std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead) :
-	mSet(varset), mClauseHead(clauseHead)
+Factor::Factor(const VarDb &db, std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead) :
+	mSet(db, varset), mClauseHead(db, clauseHead), mExtendedVarSet(db)
 {
    Init();
 }
@@ -92,7 +91,7 @@ void Factor::CompleteProbabilities()
 		Clause cHead(mClauseHead);
 		ValueType v = 0.;
 		bool bUpdateClauseFound = false;    // found unidentified member in the sequence
-		Clause cFullUpdateClause;
+		Clause cFullUpdateClause(mSet);
 		do
 		{
 			Clause tryClause = Clause::Append(mSet, cHead, cTail);
@@ -113,7 +112,7 @@ void Factor::CompleteProbabilities()
 
 		if (v < 1.0 && bUpdateClauseFound)
 		{
-			v = 1.0 - v;
+			v = 1.0F - v;
 			AddInstance(cFullUpdateClause.GetInstanceId(), v);
 		}
 
@@ -174,14 +173,16 @@ Factor::Merge(std::shared_ptr<Factor> f)
         {
             int nOffs1 = h.MapOffsRTo1(n);
             int nOffs2 = h.MapOffsRTo2(n);
-            bool bSetInRes = ((i & (1ULL << n)) != 0);
-            
-            if(bSetInRes && nOffs1 >=0)
-                id1 |= (1ULL << nOffs1);
 
-            if(bSetInRes && nOffs2 >=0)
-                id2 |= (1ULL << nOffs2);
+            VarState valInRes = h.mVr.FetchVarStateByOffs(n, i);
+            
+            if(nOffs1 >=0)
+                id1 +=  h.mV1.GetInstanceComponentByOffs(nOffs1, valInRes);
+
+            if(nOffs2 >=0)
+                id2 +=  h.mV2.GetInstanceComponentByOffs(nOffs2, valInRes);
         }
+
         ValueType v = Get(id1) * f->Get(id2);
         res->AddInstance(i, v);
         Clause newExtendedClause(newExtendedVs);

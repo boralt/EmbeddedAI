@@ -229,11 +229,47 @@ VarSet::ConvertVarArray(InstanceId instanceId)
       VarOperator &op = *it;
       // fetch value from InstanceId
       instanceId /= op.mMultiplier;
-      VarState var = instanceId % op.mSize;
+      VarState var = (VarState) (instanceId % op.mSize);
       res[op.mId] = var;
    }
    return res;
 };
+
+
+VarState
+VarSet::FetchVarState(VarId  id, InstanceId instanceId)
+{
+   int offs = GetOffs(id);
+   if( offs < 0)
+   {
+      return 0;
+   }
+
+   VarOperator op = GetOpByOffset(offs);
+   return (VarState) ((instanceId / op.mMultiplier)%op.mSize);
+}
+
+VarState
+VarSet::FetchVarStateByOffs(int offs, InstanceId instanceId) {
+   if (offs <0 || offs >= mList.size())
+      return 0;
+
+   VarOperator op = GetOpByOffset(offs);
+   return (VarState) ((instanceId / op.mMultiplier)%op.mSize);
+}
+
+VarOperator
+VarSet::GetOpByOffset(int offs)
+{
+   // B.A. improve this for scalability
+   for (auto it = mList.begin(); it != mList.end();  ++it) {
+      VarOperator &op = *it;
+      if(!offs)
+         return op;
+   }
+
+   return VarOperator(0,0,0);
+}
 
 
 VarId 
@@ -309,8 +345,7 @@ VarSet::Substract(const VarSet &vs) const
 }
 
 
-std::string 
-VarSet::GetJson() const
+std::string GetJson(const VarDb &) const
 {
    std::string s;
    s = "[ ";

@@ -230,6 +230,29 @@ namespace bayeslib
 
       }
 
+      /// Get contribution of Var found by offset to the Instance value of VarSe
+      /// @param id int offs offset of variable
+      /// @param v  VarState state of Variable in its domain
+      /// @return contribution of this variable in InsecnceId value of clause based on this VarSet
+      InstanceId GetInstanceComponentByOffs(int offs, VarState v)
+      {
+         if (offs < 0)
+            return 0;
+
+         return _GetByOffset(offs).mMultiplier*v;
+
+      }
+
+      /// Fetch individual Variable component from InstanceId  representation
+      /// @param id variable id
+      /// @param instanceId instanceId withi this varSet
+      VarState FetchVarState(VarId  id, InstanceId instanceId);
+
+      /// Fetch individual Variable component from InstanceId  representation
+      /// @param id variable id
+      /// @param instanceId instanceId withi this varSet
+      VarState FetchVarStateByOffs(int offs, InstanceId instanceId);
+
       /// Convert to clause array
       /// @param instanceId of clause
       /// @return array of Variable states scaled to maximum allowed varset
@@ -238,10 +261,10 @@ namespace bayeslib
 
 
       /// Abbreviated Json output, doesn't resolve VarIds tonames
-	  std::string GetJsonAbbrev() const;
+	   std::string GetJsonAbbrev() const;
 
       // from UIElem
-	  std::string GetJson(const VarDb &) const override;
+	   std::string GetJson(const VarDb &) const override;
       std::string GetType() const override;
 
       /// Test is VarSet is empty
@@ -284,6 +307,8 @@ namespace bayeslib
       const VarOperator & _GetByOffset(int offs);
       InstanceId mCachedInstances;
       std::list<VarOperator> mList;
+
+      VarOperator GetOpByOffset(int offs);
 
 	   // optimization mapping of VarId to indexin mList
       std::array<int, MAX_SET_SIZE> mOffsetMapping;
@@ -578,7 +603,7 @@ namespace bayeslib
       // perfect forwarding constructor
       // @param varset initializer list for full varset for this Factor
       // @param clauseHead VarSet for Head of this Factor
-      Factor(std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead);
+      Factor(const VarDb &db, std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead);
 
       /// Set Value to any row (Clause) in a table
       /// @param instance InstanceId representing Clause (row) in this table
