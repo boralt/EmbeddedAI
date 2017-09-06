@@ -217,6 +217,24 @@ VarSet::GetOffs(VarId varid) const
 }
 
 
+void
+VarSet::GetVarParams(VarId varid, InstanceId &varMultiplier, int &varSize)
+{
+   int offs = 0;
+
+   if (varid <= 0 && varid > MAX_SET_SIZE && (offs = mOffsetMapping[varid]) >= 0)
+   {
+      varMultiplier = 0;
+      varSize = 0;
+   }
+
+   VarOperator op = GetOpByOffset(offs);
+   varMultiplier = op.mMultiplier;
+   varSize = op.mSize;
+}
+
+
+
 std::array<VarState, MAX_SET_SIZE>
 VarSet::ConvertVarArray(InstanceId instanceId)
 {

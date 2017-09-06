@@ -36,6 +36,8 @@ Factor::Init()
 
     mFactorSize = mSet.GetInstances();
     int index= 0;
+
+    // B.A. replace mVarToIndex with mSet.GetOffset()
     for(VarId id=mSet.GetFirst(); id != 0; id = mSet.GetNext(id))
     {        
         mBsPresent.set(id);
@@ -215,7 +217,7 @@ Factor::EliminateVar(VarId id)
         return shared_from_this();
     }
 
-    VarSet vsEliminate;
+    VarSet vsEliminate(mSet.GetDb());
     vsEliminate.Add(id);
 
     VarSet vsResTail = mSet.Substract(vsEliminate);
@@ -229,20 +231,28 @@ Factor::EliminateVar(VarId id)
     //        vsRes.Add(resId);
     //}
 
-    std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
-    InstanceId nEliminateBit = 1ULL << mVarToIndex[id];
-    InstanceId nRightPart = nEliminateBit - 1;
-    InstanceId nShiftMask  = ~(nRightPart | nEliminateBit);
 
-    for(InstanceId nLoop=0; nLoop < vsResTail.GetInstances(); nLoop++)
-    {
-        // translate new factor instance into original instances
-        InstanceId nOrigInstance0 = ((nLoop << 1) & nShiftMask) | (nLoop & nRightPart) ;
-        InstanceId nOrigInstance1 = nOrigInstance0 | nEliminateBit ;
-            
-        ValueType val = mValues[nOrigInstance0] + mValues[nOrigInstance1];
-        res->AddInstance(nLoop, val);
-    }
+    std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
+
+
+    InstanceId rightMultiplier = 0;
+    int eliminateSize = 0;
+    mSet.GetVarParams(id, rightMultiplier, eliminateSize);
+    InstanceId leftMultiplier = rightMultiplier*eliminateSize;
+
+   for(InstanceId nLoop=0; nLoop < vsResTail.GetInstances(); nLoop++)
+   {
+      // calc base part of InstanceId in old VarSet
+      InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
+      ValueType valSum = 0;
+
+      for(VarState elimState=0; elimState < eliminateSize; ++elimState)
+      {
+         InstanceId oldInstance = oldInstanceBase + eliminateSize*rightMultiplier;
+         valSum += mValues[oldInstance];
+      }
+      res->AddInstance(nLoop, valSum);
+   }
     return res;
 }
 

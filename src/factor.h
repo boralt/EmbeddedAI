@@ -215,6 +215,11 @@ namespace bayeslib
       ///         returns 0 if variableis not present in this VarSet
       int GetOffs(VarId varid) const;
 
+      /// Get Parameters of variable inside VarSet
+      /// @param varid Id of variable in varset
+      /// @param varMulriplier out parameter for multiplier of variable in this VarSet
+      /// @param varSize domain size of this Variable
+      void GetVarParams(VarId varid, InstanceId &varMultiplier, int &varSize);
 
       /// Get contribution of VarId to the Instance value of VarSe
       /// @param id VarId id of variable
