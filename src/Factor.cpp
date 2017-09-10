@@ -220,19 +220,10 @@ Factor::EliminateVar(VarId id)
     VarSet vsEliminate(mSet.GetDb());
     vsEliminate.Add(id);
 
-    VarSet vsResTail = mSet.Substract(vsEliminate);
+    VarSet vsRes = mSet.Substract(vsEliminate);
     VarSet vsResHead = mClauseHead.Substract(vsEliminate);
-   
 
-    //for( VarId resId = mSet.GetFirst(); resId != 0; resId = mSet.GetNext(resId))
-    //{
-    //    // not eliminated var 
-    //    if (resId != id)
-    //        vsRes.Add(resId);
-    //}
-
-
-    std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
+    std::shared_ptr<Factor> res(new Factor(vsRes, vsResHead));
 
 
     InstanceId rightMultiplier = 0;
@@ -240,7 +231,7 @@ Factor::EliminateVar(VarId id)
     mSet.GetVarParams(id, rightMultiplier, eliminateSize);
     InstanceId leftMultiplier = rightMultiplier*eliminateSize;
 
-   for(InstanceId nLoop=0; nLoop < vsResTail.GetInstances(); nLoop++)
+   for(InstanceId nLoop=0; nLoop < vsRes.GetInstances(); nLoop++)
    {
       // calc base part of InstanceId in old VarSet
       InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
@@ -248,7 +239,7 @@ Factor::EliminateVar(VarId id)
 
       for(VarState elimState=0; elimState < eliminateSize; ++elimState)
       {
-         InstanceId oldInstance = oldInstanceBase + eliminateSize*rightMultiplier;
+         InstanceId oldInstance = oldInstanceBase + elimState*rightMultiplier;
          valSum += mValues[oldInstance];
       }
       res->AddInstance(nLoop, valSum);
@@ -269,7 +260,7 @@ Factor::EliminateVar(const VarSet &ids)
 
 
 std::shared_ptr<Factor> 
-Factor::PruneEdge(VarId v, bool val)
+Factor::PruneEdge(VarId v, VarState val)
 {
    VarSet newVs = mSet.Substract(v);
    std::shared_ptr<Factor> res = std::make_shared<Factor>(newVs);
@@ -323,16 +314,16 @@ Factor::Normalize()
    do
    {
       Clause cTail(vsTail);
-      ValueType v = 0.;
+      ValueType v = 0.f;
       do
       {
          Clause res = Clause::Append(mSet, cHead, cTail);
          v += Get(res.GetInstanceId());
       } while (!cTail.Incr());
 
-      if (v == 0.)
-         v = 1.;
-      
+      if (v == 0.f)
+         v = 1.f;
+      // start loop over tail vars again, this time normalizing results
       do
       {
          Clause res = Clause::Append(mSet, cHead, cTail);
@@ -348,56 +339,54 @@ Factor::MaximizeVar(VarId id)
 {
    if (!mBsPresent[id])
    {
+      // B.A. consider creating new factor
       // variable is not present
       return shared_from_this();
    }
 
-   VarSet vsEliminate;
+   VarSet vsEliminate(mSet.GetDb());
    vsEliminate.Add(id);
 
-   VarSet vsResTail = mSet.Substract(vsEliminate);
+   // content of new varset
+   VarSet vsRes = mSet.Substract(vsEliminate);
    VarSet vsResHead = mClauseHead.Substract(vsEliminate);
 
+   std::shared_ptr<Factor> res(new Factor(vsRes, vsResHead));
 
-   //for( VarId resId = mSet.GetFirst(); resId != 0; resId = mSet.GetNext(resId))
-   //{
-   //    // not eliminated var 
-   //    if (resId != id)
-   //        vsRes.Add(resId);
-   //}
-
-   std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
-   InstanceId nEliminateBit = 1ULL << mVarToIndex[id];
-   InstanceId nRightPart = nEliminateBit - 1;
-   InstanceId nShiftMask = ~(nRightPart | nEliminateBit);
+   InstanceId rightMultiplier = 0;
+   int eliminateSize = 0;
+   mSet.GetVarParams(id, rightMultiplier, eliminateSize);
+   InstanceId leftMultiplier = rightMultiplier*eliminateSize;
 
    VarSet newExtendedVs = mExtendedVarSet;
    newExtendedVs.Add(id);
    res->SetExtendedVarSet(newExtendedVs);
 
-   for (InstanceId nLoop = 0; nLoop < vsResTail.GetInstances(); nLoop++)
+
+   for(InstanceId nLoop=0; nLoop < vsRes.GetInstances(); nLoop++)
    {
-      // translate new factor instance into original instances
-      InstanceId nOrigInstance0 = ((nLoop << 1) & nShiftMask) | (nLoop & nRightPart);
-      InstanceId nOrigInstance1 = nOrigInstance0 | nEliminateBit;
+      // calc base part of InstanceId in old VarSet
+      InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
+      ValueType valMax = -1.f;
+      VarState varStateMax = 0;
+      InstanceId oldInstanceMax = 0;
 
-      ValueType val = 0.;
-
-      if (mValues[nOrigInstance0] > mValues[nOrigInstance1])
+      for(VarState elimState=0; elimState < eliminateSize; ++elimState)
       {
-         res->AddInstance(nLoop, mValues[nOrigInstance0]);
-         Clause cl(newExtendedVs, GetExtendedClause(nOrigInstance0));
-         cl.SetVar(id, false);
-         res->AddExtendedClause(nLoop, cl.GetInstanceId());
+         InstanceId oldInstance = oldInstanceBase + elimState*rightMultiplier;
+         if(valMax < mValues[oldInstance])
+         {
+            valMax = mValues[oldInstance];
+            varStateMax = elimState;
+            oldInstanceMax = oldInstance;
+         }
       }
-      else
-      {
-         res->AddInstance(nLoop, mValues[nOrigInstance1]);
-         Clause cl(newExtendedVs, GetExtendedClause(nOrigInstance1));
-         cl.SetVar(id, true);
-         res->AddExtendedClause(nLoop, cl.GetInstanceId());
-      }
+      res->AddInstance(nLoop, valMax);
+      Clause cl(newExtendedVs, GetExtendedClause(oldInstanceMax));
+      cl.SetVar(id, varStateMax);
+      res->AddExtendedClause(nLoop, cl.GetInstanceId());
    }
+
    return res;
 }
 
