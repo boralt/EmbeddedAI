@@ -18,7 +18,7 @@ dumpbinary(char *sz, size_t lenSz, InstanceId v, int sizeVarSet)
 {
    InstanceId mask = 1;
    size_t i =0;
-   for (i = 0; i < sizeVarSet && i < (lenSz-1); i++, mask <<=1)
+   for (i = 0; i < (size_t) sizeVarSet && i < (lenSz-1); i++, mask <<=1)
    {
       if (v & mask)
          sz[i] = '1';
@@ -262,7 +262,7 @@ Factor::EliminateVar(const VarSet &ids)
 std::shared_ptr<Factor> 
 Factor::PruneEdge(VarId v, VarState val)
 {
-   VarSet newVs = mSet.Substract(v);
+	VarSet newVs = mSet.Substract({GetDb(), v });
    std::shared_ptr<Factor> res = std::make_shared<Factor>(newVs);
    Clause clNew(newVs);
    Clause clOld(mSet);
@@ -411,13 +411,13 @@ void
 Factor::EraseExtendedInfo()
 {
    mExtendedClauseVector.clear();
-   mExtendedVarSet = VarSet();
+   mExtendedVarSet = VarSet(GetDb());
 }
 
 
 
 std::string 
-Factor::GetJson(VarDb &db) const
+Factor::GetJson(const VarDb &db) const
 {
    std::string s;
    s = "{varset:";

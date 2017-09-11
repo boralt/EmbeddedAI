@@ -48,7 +48,7 @@ typedef float ValueType;
 typedef u8 VarState;
 
 template <class T>
-char * AddJsonAttr(char *pBuffer, u32 bufSize, const char *pName, const char *pFormat, T val)
+char * AddJsonAttr(char *pBuffer, u32 bufSize, const char *pName, const char *pFormat,const T val)
 {
    char szFormat[40];
    snprintf(szFormat, sizeof(szFormat), "\"%s\":\"%s\",", "%s", pFormat);

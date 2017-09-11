@@ -52,10 +52,10 @@ Clause::Clause(const VarSet &vs, Json::Value &v) :
       
       if(i < v.size())
       {
-         VarState v = mVarSet.GetDb().JsonValToState(id, v[i]);
-         mClause[id] = v;
-         if(v)
-            mInstanceId += (InstanceId) v  * mVarSet.GetInstanceComponent(id, v);
+         VarState vs = mVarSet.GetDb().JsonValToState(id, v[i]);
+         mClause[id] = vs;
+         if(vs)
+            mInstanceId += (InstanceId) vs  * mVarSet.GetInstanceComponent(id, vs);
       }
    }
 }
@@ -200,7 +200,7 @@ Clause::GetType() const
 }
 
 std::string
-GetJson(const VarDb &)const
+Clause::GetJson(const VarDb &db)const
 {
    std::string s;
    s = "{ ";

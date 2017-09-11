@@ -20,7 +20,7 @@ mName(sName), mId(id), mVarType(vtype)
     
       
 std::string 
-Var::GetJson(VarDb &db) const
+Var::GetJson(const VarDb &db) const
 {
    char sz[200];
 
@@ -44,6 +44,7 @@ VarState
 Var::AddState(std::string sName)
 {
    mVarDomainStates.push_back(sName);
+   return (VarState)(mVarDomainStates.size() - 1);
 }
 
 std::string

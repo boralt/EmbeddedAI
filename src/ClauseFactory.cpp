@@ -29,7 +29,7 @@ using namespace bayeslib;
 Clause
 ClauseFactory::Create(VarDb &db, Json::Value &v)
 {
-    Clause res;
+    Clause res(db);
 
     if (v.isMember("varset"))
     {
@@ -37,7 +37,7 @@ ClauseFactory::Create(VarDb &db, Json::Value &v)
     }
     else
     {
-       return Clause();
+       return res;
     }
 
     for (Json::Value::iterator it = v.begin();

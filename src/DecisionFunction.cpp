@@ -35,7 +35,7 @@ DecisionFunction::GetDecision(InstanceId id)
 }
 
 std::string 
-DecisionFunction::GetJson(VarDb &db) const
+DecisionFunction::GetJson(const VarDb &db) const
 {
    std::string s;
    s = "{varset:";

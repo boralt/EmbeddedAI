@@ -158,7 +158,7 @@ VarDb::JsonValToState(VarId id, const Json::Value &v) const
 
       for(res=0; res < var.GetDomainSize(); res++)
       {
-         if (!strcmp(pStr, var.GetState(res))
+         if (!strcmp(pStr, var.GetState(res).c_str()))
          {
             return res;
          }

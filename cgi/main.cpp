@@ -14,7 +14,7 @@ std::string urlDecode(std::string str)
     std::string temp;
     int i;
     char tmp[5], tmpchar;
-    strcpy(tmp,"0x");
+    strncpy_s(tmp,"0x",5);
     int size = str.size();
     for (i=0; i<size; i++) {
         if (str[i]=='%') {

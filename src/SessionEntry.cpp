@@ -33,8 +33,8 @@ SessionEntry::RunCommand(std::string sOp)
 
    VarDb *pVarDb= 0;
    FactorSet *pFs = 0;
-   VarSet opVarSet;
-   Clause opClause;
+   VarSet opVarSet(*pVarDb);
+   Clause opClause(*pVarDb);
    std::string op;
 
    if (v.isMember("VarDb"))

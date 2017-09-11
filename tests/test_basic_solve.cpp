@@ -40,28 +40,28 @@ int CreateRainTest(VarDb &db, FactorSet &fs)
    db.AddVar("E");   // umbreala
 
    // Winter
-   VarSet vsA;
+   VarSet vsA(db);
    vsA << db["A"];
    std::shared_ptr<Factor> fA = std::make_shared<Factor>(vsA);
    fA->AddInstance(0, 0.4F);
    fA->AddInstance(1, 0.6F);
 
    // Sprinkler
-   VarSet vsB;
+   VarSet vsB(db);
    vsB << db["A"] << db["B"];
    std::shared_ptr<Factor> fB = std::make_shared<Factor>(vsB, db["B"]);
    Factor::FactorLoader flB(fB);
    flB << 0.25F << 0.8F << 0.75F << 0.2F;
 
    // Rain
-   VarSet vsC;
+   VarSet vsC(db);
    vsC << db["A"] << db["C"];
    std::shared_ptr<Factor> fC = std::make_shared<Factor>(vsC, db["C"]);
    Factor::FactorLoader flC(fC);
    flC << 0.9F << 0.2F << 0.1F << 0.8F;
 
    // Wet grass
-   VarSet vsD;
+   VarSet vsD(db);
    vsD << db["B"];
    vsD << db["C"];
    vsD << db["D"];
@@ -70,7 +70,7 @@ int CreateRainTest(VarDb &db, FactorSet &fs)
    flD << 1.0F << 0.1F << 0.2F << 0.05F << 0.0F << 0.9F << 0.8F << 0.95F;
 
    // see umbrela
-   VarSet vsE;
+   VarSet vsE(db);
    vsE << db["C"] << db["E"];
    std::shared_ptr<Factor> fE = std::make_shared<Factor>(vsE, db["E"]);
    Factor::FactorLoader flE(fE);
@@ -101,7 +101,7 @@ int TestRain()
    printf("\n==RAIN TEST==\n%s\n", s.c_str());
 
    // Observing Winter and Sprinkler off
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["A"] << db["B"];
    Clause cSample(vsSample);
    cSample.SetVar(db["A"], true);
@@ -114,7 +114,7 @@ int TestRain()
 
 
    // eliminate winter, sprinkler, rain 
-   VarSet vsEliminate;
+   VarSet vsEliminate(db);
    vsEliminate << db["A"] << db["B"] << db["C"];
    fs.EliminateVar(vsEliminate);
    std::shared_ptr<Factor> res1 = fs.Merge();
@@ -141,7 +141,7 @@ int TestRain2()
    printf("\n==RAIN TEST WITH EDGE Pruning==\n%s\n", s.c_str());
 
 
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["A"] << db["B"];
    Clause cSample(vsSample);
    cSample.SetVar(db["A"], true);
@@ -159,7 +159,7 @@ int TestRain2()
 
 
 
-   VarSet vsEliminate;
+   VarSet vsEliminate(db);
    vsEliminate << db["A"] << db["B"] << db["C"];
    fs.EliminateVar(vsEliminate);
    s = fs.GetJson(db);

@@ -101,7 +101,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
    for (int nLink = 1; nLink <= 4; nLink++)
    {
       // toplevel varaibles.
-      VarSet vsConjL;
+      VarSet vsConjL(db);
       // conjested link
       snprintf(sz, 10, "cjl%d", nLink);
       vsConjL << db[sz];
@@ -109,7 +109,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       fConjL->AddInstance(0, 0.95F);
       fConjL->AddInstance(1, 0.05F);
 
-      VarSet vsConjSL1;
+      VarSet vsConjSL1(db);
       // conjested sub link 1 
       snprintf(sz, 10, "cjl%d_1", nLink);
       vsConjSL1 << db[sz];
@@ -117,7 +117,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       fConjSL1->AddInstance(0, 0.9F);
       fConjSL1->AddInstance(1, 0.1F);
 
-      VarSet vsConjSL2;
+      VarSet vsConjSL2(db);
       // conjested sub link 2 
       snprintf(sz, 10, "cjl%d_2", nLink);
       vsConjSL2 << db[sz];
@@ -127,7 +127,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
 
       // second level variables
 
-      VarSet vsDropLo1;
+      VarSet vsDropLo1(db);
       // low drop link 1
       VarId headVar;
       snprintf(sz, 10, "cjl%d", nLink);
@@ -147,7 +147,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropLo1 << 0.01F << 0.3F << 0.3F << 0.4F << 0.3F << 0.4F << 0.4F << 0.45F;
       /////
 
-      VarSet vsDropLo2;
+      VarSet vsDropLo2(db);
       // low drop link 2
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropLo2 << db[sz];
@@ -166,7 +166,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropLo2 << 0.01F << 0.3F << 0.3F << 0.4F << 0.3F << 0.4F << 0.4F << 0.45F;
 
       //HHHHHHHHHHHHHHH
-      VarSet vsDropHi1;
+      VarSet vsDropHi1(db);
       // low drop link 1
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropHi1 << db[sz];
@@ -185,7 +185,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropHi1 << 0.002F << 0.1F << 0.1F << 0.2F << 0.1F << 0.3F << 0.3F << 0.35F;
       /////
 
-      VarSet vsDropHi2;
+      VarSet vsDropHi2(db);
       // low drop link 2
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropHi2 << db[sz];
@@ -207,7 +207,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       ////////////////////////////////////////////////////
       // ACCUMULATED drop VARS
 
-      VarSet vsDropLoA1;
+      VarSet vsDropLoA1(db);
       // low drop link 1
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropLoA1 << db[sz];
@@ -226,7 +226,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropLoA1 << 0.05F << 0.5F << 0.5F << 0.6F << 0.6F << 0.6F << 0.6F << 0.70F;
       /////
 
-      VarSet vsDropLoA2;
+      VarSet vsDropLoA2(db);
       // low drop link 2
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropLoA2 << db[sz];
@@ -245,7 +245,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropLoA2 << 0.05F << 0.5F << 0.5F << 0.6F << 0.6F << 0.6F << 0.6F << 0.70F;
 
       //HHHHHHHHHHHHHHH
-      VarSet vsDropHiA1;
+      VarSet vsDropHiA1(db);
       // low drop link 1
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropHiA1 << db[sz];
@@ -264,7 +264,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       flDropHiA1 << 0.001F << 0.2F << 0.3F << 0.3F << 0.3F << 0.4F << 0.3F << 0.45F;
       /////
 
-      VarSet vsDropHiA2;
+      VarSet vsDropHiA2(db);
       // low drop link 2
       snprintf(sz, 10, "cjl%d", nLink);
       vsDropHiA2 << db[sz];
@@ -297,7 +297,7 @@ int InitLargeTest(VarDb &db, FactorSet &fs)
       fs.AddFactor(fDropHiA2);
    }
 
-   VarSet vsConjE;
+   VarSet vsConjE(db);
    // conjested link
    vsConjE << db["cjE"];
    std::shared_ptr<Factor> fConjE = std::make_shared<Factor>(vsConjE, db["cjE"]);
@@ -323,7 +323,7 @@ int LargeTest1()
    printf("\n==Large test with edge Pruning==\n%s\n", s.c_str());
 
 
-   VarSet vsSample, vsSolve;
+   VarSet vsSample(db), vsSolve(db);
    vsSolve << db["cjl1_1"] << db["cjl1_2"] << db["cjl1"];
    vsSolve << db["cjl2_1"] << db["cjl2_2"] << db["cjl2"];
    vsSolve << db["cjl3_1"] << db["cjl3_2"] << db["cjl3"];
@@ -428,7 +428,7 @@ int LargeTest2()
    printf("\n==Large test2  with edge Pruning==\n%s\n", s.c_str());
 
 
-   VarSet vsSample, vsSolve;
+   VarSet vsSample(db), vsSolve(db);
    vsSolve << db["cjl1_1"] << db["cjl1_2"] << db["cjl1"];
    vsSolve << db["cjl2_1"] << db["cjl2_2"] << db["cjl2"];
    vsSolve << db["cjl3_1"] << db["cjl3_2"] << db["cjl3"];

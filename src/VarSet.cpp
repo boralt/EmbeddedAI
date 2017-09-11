@@ -65,7 +65,7 @@ VarSet::_Add(VarId id)
       // instances until now
       InstanceId inst = GetInstances();
       Var v = mDb.GetVar(id);
-		mList.push_back({id, v.GetDomainSize(), inst });
+		mList.push_back({id,(VarState) v.GetDomainSize(), inst });
 		mOffsetMapping[id] = mList.size()-1;
       // invalidate the cache
       mCachedInstances = 0;
@@ -93,17 +93,17 @@ VarSet::Add(const VarSet &vs)
 void
 VarSet::Remove(VarId id)
 {
-   for(std::list<VarId>::iterator it = mList.begin(); 
+   for(auto it = mList.begin(); 
       it != mList.end(); ++it)
    {
-	   if (*it == id)
+	   if (it->mId == id)
 	   {
-		   mOffsetMapping[*it] = -1;
+		   mOffsetMapping[it->mId] = -1;
 		   it = mList.erase(it);		   
 		   // recalculate offsets of remaining variables
 		   for (; it != mList.end(); ++it)
 		   {
-			   mOffsetMapping[*it]--;
+			   mOffsetMapping[it->mId]--;
 		   }
 
            mCachedInstances = 0;
@@ -154,7 +154,7 @@ VarSet::FilterVarSet(VarType vartype)
 	VarSet res(mDb);
 	for (auto it = mList.begin(); it != mList.end(); ++it)
 	{
-		if (vdb.GetVarType(*it) == vartype)
+		if (mDb.GetVarType(it->mId) == vartype)
 		{
 			res.Add(it->mId);
 		}
@@ -269,14 +269,14 @@ VarSet::FetchVarState(VarId  id, InstanceId instanceId)
 
 VarState
 VarSet::FetchVarStateByOffs(int offs, InstanceId instanceId) {
-   if (offs <0 || offs >= mList.size())
+   if (offs <0 || offs >= (int) mList.size())
       return 0;
 
    VarOperator op = GetOpByOffset(offs);
    return (VarState) ((instanceId / op.mMultiplier)%op.mSize);
 }
 
-VarOperator
+VarSet::VarOperator
 VarSet::GetOpByOffset(int offs)
 {
    // B.A. improve this for scalability
@@ -363,7 +363,8 @@ VarSet::Substract(const VarSet &vs) const
 }
 
 
-std::string GetJson(const VarDb &) const
+std::string 
+VarSet::GetJson(const VarDb &) const
 {
    std::string s;
    s = "[ ";
@@ -388,7 +389,7 @@ VarSet::GetJsonAbbrev() const
    for(auto it = mList.begin(); it != mList.end(); ++it)
    {
       char sz[20];
-      snprintf(sz, sizeof(sz), "%d", *it);
+      snprintf(sz, sizeof(sz), "%d", it->mId);
       s += sz;
       s += ",";
    }
@@ -404,7 +405,7 @@ VarSet::GetType() const
    return "VarSet";
 }
 
-const VarOperator &
+const VarSet::VarOperator &
 VarSet::_GetByOffset(int offs)
 {
    for(auto it = mList.begin();

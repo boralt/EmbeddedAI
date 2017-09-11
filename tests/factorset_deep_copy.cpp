@@ -37,19 +37,19 @@ int Test_DeepCopy()
    db.AddVar("prep");
    db.AddVar("result");
 
-   VarSet vs1;
+   VarSet vs1(db);
    vs1 << db["injury"];
    std::shared_ptr<Factor> fInjury = std::make_shared<Factor>(vs1);
    fInjury->AddInstance(0, 0.9F);
    fInjury->AddInstance(1, 0.1F);
 
-   VarSet vs2;
+   VarSet vs2(db);
    vs2 << db["prep"];
    std::shared_ptr<Factor> fPrep = std::make_shared<Factor>(vs2);
    fPrep->AddInstance(0, 0.2F);
    fPrep->AddInstance(1, 0.8F);
 
-   VarSet vs3;
+   VarSet vs3(db);
    vs3 << db["injury"];
    vs3 << db["prep"];
    vs3 << db["result"];
@@ -69,7 +69,7 @@ int Test_DeepCopy()
    FactorSet fs2 = fs;
 
    // Add observation that player is prepared
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["prep"];
    Clause cSample(vsSample);
    cSample.SetVar(db["prep"], true);
@@ -80,7 +80,7 @@ int Test_DeepCopy()
    s = fs.GetJson(db);
    printf("====After apply===\n%s", s.c_str());
 
-   VarSet vsEliminate;
+   VarSet vsEliminate(db);
    vsEliminate << db["injury"];
    vsEliminate << db["prep"];
    fs.EliminateVar(vsEliminate);
@@ -100,15 +100,15 @@ int Test_DeepCopy()
    int nMatchCount = 0;
    for (auto iter = r2.begin(); iter != r2.end(); ++iter)
    {
-      if (iter->get()->GetVarSet() == VarSet({ db["injury"], db["prep"], db["result"] }))
+      if (iter->get()->GetVarSet() == VarSet(db, { db["injury"], db["prep"], db["result"] }))
       {
          nMatchCount++;
       }
-      else if (iter->get()->GetVarSet() == VarSet({ db["injury"] }))
+      else if (iter->get()->GetVarSet() == VarSet(db, { db["injury"] }))
       {
          nMatchCount++;
       }
-      else if (iter->get()->GetVarSet() == VarSet({ db["prep"] }))
+      else if (iter->get()->GetVarSet() == VarSet(db, { db["prep"] }))
       {
          nMatchCount++;
       }

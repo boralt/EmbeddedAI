@@ -15,7 +15,7 @@
 using namespace bayeslib;
 
 FactorMergeHelper::FactorMergeHelper(const VarSet &v1,
-   const VarSet &v2) : mV1(v1), mV2(v2)
+   const VarSet &v2) : mV1(v1), mV2(v2), mVr(v1.GetDb())
 {
     int offs1=0;
     int offs2=0;

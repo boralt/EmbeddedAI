@@ -148,6 +148,7 @@ namespace bayeslib
         mCachedInstances = another.mCachedInstances;
         mList = another.mList;
         mOffsetMapping = another.mOffsetMapping;
+        return *this;
      }
 
 
@@ -310,7 +311,7 @@ namespace bayeslib
       };
 
       const VarOperator & _GetByOffset(int offs);
-      InstanceId mCachedInstances;
+      mutable InstanceId mCachedInstances;
       std::list<VarOperator> mList;
 
       VarOperator GetOpByOffset(int offs);
@@ -534,7 +535,7 @@ namespace bayeslib
    class ClauseValue : public Clause
    {
    public:
-
+      
       /// Template constructor uses any of VarSet constructors and assignes value 0f 0.0F
 	   template<typename ...Args>  ClauseValue(Args && ... args) :
 		   Clause(std::forward<Args>(args) ...), mVal(0)
@@ -793,6 +794,8 @@ namespace bayeslib
 
         void Init();
 
+        const VarDb &GetDb() { return mSet.GetDb(); }
+
         std::bitset<MAX_SET_SIZE> mBsPresent;
         std::map<VarId, int> mVarToIndex;      // variable to offset in varset
         VarSet mSet;
@@ -976,7 +979,7 @@ namespace bayeslib
       int GetDebugLevel() { return mDebugLevel; };
       void SetDebugLevel(int n) { mDebugLevel = n; }
 
-
+      const VarDb & GetDb() const { return mDb; }
 
    protected:
       ListFactors mFactors;

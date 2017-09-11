@@ -47,63 +47,63 @@ int InitDecisionTest1(VarDb &db, FactorSet &fs)
    db.AddVar("Utility", VarType_Utility);
 
    // Input Tampering
-   VarSet vsTampering;
+   VarSet vsTampering(db);
    vsTampering << db["Tampering"];
    std::shared_ptr<Factor> fTampering = std::make_shared<Factor>(vsTampering, db["Tampering"]);
    *fTampering << 0.98F << fin ;
 
 
    // Input Fire
-   VarSet vsFire;
+   VarSet vsFire(db);
    vsFire << db["Fire"];
    std::shared_ptr<Factor> fFire = std::make_shared<Factor>(vsFire, db["Fire"]);
    *fFire << 0.99F << fin;
 
 
    // Alarm
-   VarSet vsAlarm;
+   VarSet vsAlarm(db);
    vsAlarm << db["Fire"] << db["Tampering"] << db["Alarm"];
    std::shared_ptr<Factor> fAlarm = std::make_shared<Factor>(vsAlarm, db["Alarm"]);
    *fAlarm << 0.9999F << 0.01F << 0.15F << 0.5F << 0.0001F << 0.99F << 0.85F << 0.5F;
 
    // People Leaving
-   VarSet vsLeaving;
+   VarSet vsLeaving(db);
    vsLeaving << db["Alarm"] << db["Leaving"];
    std::shared_ptr<Factor> fLeaving = std::make_shared<Factor>(vsLeaving, db["Leaving"]);
    *fLeaving << 0.999F << 0.12F << 0.001F << 0.88F;
 
    // Report is filed
-   VarSet vsReport;
+   VarSet vsReport(db);
    vsReport << db["Leaving"] << db["Report"];
    std::shared_ptr<Factor> fReport = std::make_shared<Factor>(vsReport, db["Report"]);
    *fReport << 0.99F << 0.25F << 0.01F << 0.75F;
 
    // Smoke
-   VarSet vsSmoke;
+   VarSet vsSmoke(db);
    vsSmoke << db["Fire"] << db["Smoke"];
    std::shared_ptr<Factor> fSmoke = std::make_shared<Factor>(vsSmoke, db["Smoke"]);
    *fSmoke << 0.99F << 0.1F << 0.01F << 0.9F;
 
    //SeeSmoke
-   VarSet vsSeeSmoke;
+   VarSet vsSeeSmoke(db);
    vsSeeSmoke << db["Smoke"] << db["CheckSmoke"] << db["SeeSmoke"];
    std::shared_ptr<Factor> fSeeSmoke = std::make_shared<Factor>(vsSeeSmoke, db["SeeSmoke"]);
    *fSeeSmoke << 1.0 << 1.0 << 1.0 << 0. << 0. << 0. << 0. << 1.0;
 
    //CheckSmoke decision factor. Doesn't need probabilities
-   VarSet vsCheckSmoke;
+   VarSet vsCheckSmoke(db);
    vsCheckSmoke << db["Report"] << db["CheckSmoke"];
    std::shared_ptr<Factor> fCheckSmoke = std::make_shared<Factor>(vsCheckSmoke, db["CheckSmoke"]);
    fCheckSmoke->SetFactorType(VarType_Decision);
 
    //Call decision factor. Doesn't need probabilities
-   VarSet vsCall;
+   VarSet vsCall(db);
    vsCall << db["Report"] << db["CheckSmoke"] << db["SeeSmoke"] << db["Call"];
    std::shared_ptr<Factor> fCall = std::make_shared<Factor>(vsCall, db["Call"]);
    fCall->SetFactorType(VarType_Decision);
 
    // Utility
-   VarSet vsUtility;
+   VarSet vsUtility(db);
    vsUtility << db["Fire"] << db["CheckSmoke"] << db["Call"];
    std::shared_ptr<Factor> fUtility = std::make_shared<Factor>(vsUtility, db["Utility"]);
    *fUtility << 0. << -5000. << -20. << -5020. << -200. << -200. << -220. << -220.;
@@ -154,14 +154,14 @@ int DecisionTest1() {
 
    // ClauseValue res1 = dh->GetDecisions(Clause(VarSet({ db["Report"] }), false));
    // more compact method
-   ClauseValue res1 = dh->GetDecisions(Clause({ { db["Report"] , false } }));
+   ClauseValue res1 = dh->GetDecisions(Clause(db, { { db["Report"] , false } }));
 
    EXPECT_EQ(res1.GetVarSet().GetSize(), 1);
    EXPECT_EQ(res1.GetVarSet().GetFirst(), db["CheckSmoke"]);
    EXPECT_FALSE(res1[db["CheckSmoke"]]);
    EXPECT_NEAR(-17.58, res1.GetVal(), 0.01);
 
-   res1 = dh->GetDecisions(Clause(VarSet({ db["Report"] }), true));
+   res1 = dh->GetDecisions(Clause(VarSet(db,{ db["Report"] }), true));
    EXPECT_EQ(res1.GetVarSet().GetSize(), 1);
    EXPECT_EQ(res1.GetVarSet().GetFirst(), db["CheckSmoke"]);
    EXPECT_TRUE(res1[db["CheckSmoke"]]);
@@ -169,7 +169,7 @@ int DecisionTest1() {
 
 
    // Reported but don't See smoke
-   res1 = dh->GetDecisions(Clause(VarSet({ db["Report"], db["SeeSmoke"] }), 1));
+   res1 = dh->GetDecisions(Clause(VarSet(db,{ db["Report"], db["SeeSmoke"] }), 1));
    EXPECT_EQ(res1.GetVarSet().GetSize(), 2);
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["CheckSmoke"]));
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["Call"]));
@@ -179,7 +179,7 @@ int DecisionTest1() {
 
 
    // Reported and see smoke
-   res1 = dh->GetDecisions(Clause(VarSet({ db["Report"], db["SeeSmoke"] }), 3));
+   res1 = dh->GetDecisions(Clause(VarSet(db, { db["Report"], db["SeeSmoke"] }), 3));
    EXPECT_EQ(res1.GetVarSet().GetSize(), 2);
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["CheckSmoke"]));
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["Call"]));
