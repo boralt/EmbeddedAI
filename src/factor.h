@@ -303,7 +303,10 @@ namespace bayeslib
       public:
 
          VarOperator(VarId id, u8 var_size, InstanceId multiplier) :
-            mId(id), mMultiplier(mMultiplier), mSize(var_size) {}
+            mId(id), mMultiplier(multiplier), mSize(var_size) 
+         {
+          
+         }
 
          VarId mId;
          InstanceId mMultiplier;
@@ -379,9 +382,9 @@ namespace bayeslib
 
       Var GetVar(VarId id) const
       {
-         if(mAr.size() > id)
+         if(id != 0 && mAr.size() >= id)
          {
-            return mAr[id];
+            return mAr[id-1];
          }
          return NullVar();
       }

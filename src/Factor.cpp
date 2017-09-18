@@ -58,6 +58,7 @@ Factor::Factor(const VarSet &vset, VarId clauseHead) :
     mSet(vset), mClauseHead(vset.GetDb(), {clauseHead}), mExtendedVarSet(vset.GetDb())
 {
     mClauseHead.Add(clauseHead);
+    Init();
 }
 
 
