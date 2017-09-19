@@ -10,7 +10,7 @@
 
 #include "factor.h"
 #include "json/json.h"
-
+#include <limits>
 using namespace bayeslib;
 
 char *
@@ -368,14 +368,15 @@ Factor::MaximizeVar(VarId id)
    {
       // calc base part of InstanceId in old VarSet
       InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
-      ValueType valMax = -1.f;
+      ValueType valMax = -std::numeric_limits<float>::max();
+      
       VarState varStateMax = 0;
       InstanceId oldInstanceMax = 0;
 
       for(VarState elimState=0; elimState < eliminateSize; ++elimState)
       {
          InstanceId oldInstance = oldInstanceBase + elimState*rightMultiplier;
-         if(valMax < mValues[oldInstance])
+         if(valMax <= mValues[oldInstance])
          {
             valMax = mValues[oldInstance];
             varStateMax = elimState;

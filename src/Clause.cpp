@@ -32,18 +32,20 @@ bool ValToBool(const Json::Value &v)
 Clause::Clause(const VarDb &db) :
    mInstanceId(0), mVarSet(db)
 {
+   mClause.fill(0);
 }
 
 
 Clause::Clause(const VarSet &vs) :
    mInstanceId(0), mVarSet(vs)
 {
-
+   mClause.fill(0);
 }
 
 Clause::Clause(const VarSet &vs, Json::Value &v) :
    mInstanceId(0), mVarSet(vs)
 {
+   mClause.fill(0);
    Json::ArrayIndex i = 0;
    for(VarId id = mVarSet.GetFirst();
       id != 0;
@@ -61,8 +63,9 @@ Clause::Clause(const VarSet &vs, Json::Value &v) :
 }
 
 Clause::Clause(const VarDb &db, std::initializer_list<ClauseInitializer> initlist) :
-   mVarSet(db)
+   mInstanceId(0), mVarSet(db)
 {
+   mClause.fill(0);
    for (auto iter = initlist.begin(); iter != initlist.end(); ++iter)
    {
       AddVar(iter->varid, iter->nState);

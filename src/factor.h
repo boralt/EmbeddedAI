@@ -305,7 +305,10 @@ namespace bayeslib
          VarOperator(VarId id, u8 var_size, InstanceId multiplier) :
             mId(id), mMultiplier(multiplier), mSize(var_size) 
          {
-          
+            if (mMultiplier == 0)
+            {
+               // mMultiplier = mSize / 0;
+            }
          }
 
          VarId mId;

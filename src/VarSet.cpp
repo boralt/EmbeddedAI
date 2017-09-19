@@ -106,7 +106,7 @@ VarSet::Remove(VarId id)
 			   mOffsetMapping[it->mId]--;
 		   }
 
-           mCachedInstances = 0;
+         mCachedInstances = 0;
 		 break;
       }
    }
