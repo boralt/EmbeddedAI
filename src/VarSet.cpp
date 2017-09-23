@@ -247,8 +247,8 @@ VarSet::ConvertVarArray(InstanceId instanceId)
    {
       VarOperator &op = *it;
       // fetch value from InstanceId
-      instanceId /= op.mMultiplier;
-      VarState var = (VarState) (instanceId % op.mSize);
+      InstanceId tmp = instanceId / op.mMultiplier;
+      VarState var = (VarState) (tmp % op.mSize);
       res[op.mId] = var;
    }
    return res;

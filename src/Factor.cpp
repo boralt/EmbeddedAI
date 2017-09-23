@@ -285,6 +285,7 @@ Factor::PruneEdge(VarId v, VarState val)
 std::shared_ptr<Factor> 
 Factor::ApplyClause(const Clause &c)
 {
+
     // varset for new Factor
     VarSet vsNew = mSet.Substract(c.GetVarSet());
     VarSet vsHeadNew = mClauseHead.Substract(c.GetVarSet());
