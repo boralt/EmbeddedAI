@@ -325,7 +325,7 @@ namespace bayeslib
 	   // optimization mapping of VarId to indexin mList
       std::array<int, MAX_SET_SIZE> mOffsetMapping;
       void _Add(VarId id);
-      InstanceId VarSet::_GetInstances() const;
+      InstanceId _GetInstances() const;
       const VarDb &mDb;
 
    };
@@ -465,7 +465,7 @@ namespace bayeslib
       /// @param vs VarSet this varset is based on
       /// @param clause array of values.
       /// @note clause paramter doesn't have to exacltly match set in VarSet
-      Clause::Clause(const VarSet &vs, const std::array<VarState ,MAX_SET_SIZE> &clause);
+      Clause(const VarSet &vs, const std::array<VarState ,MAX_SET_SIZE> &clause);
 
 
 
