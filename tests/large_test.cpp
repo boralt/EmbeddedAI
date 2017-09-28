@@ -397,7 +397,7 @@ int LargeTest1()
    {
       if (vid == db["drlo3_1"] ||
          vid == db["drhi3_1"] ||
-         vid == db["drloa3_1"] || vid == db["cjl3_1"])
+         vid == db["drloa3_1"] || vid == db["cjl3_1"] )
       {
          EXPECT_TRUE(clMpe[vid]);
       }
