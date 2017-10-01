@@ -28,10 +28,18 @@ DecisionFunction::DecisionFunction(std::shared_ptr<Factor> f, VarId decisionNode
 }
 
 
-bool 
+VarState
 DecisionFunction::GetDecision(InstanceId id)
 {
-   return (mExtendedClauseVector[id] == 0)?false:true;
+   if(mExtendedVarSet.GetSize() == 1)
+   {
+      // Shortcut case
+      return (VarState) mExtendedClauseVector[id];
+   }
+   else
+   {
+      return mExtendedVarSet.FetchVarState(mDecisionNode, id);
+   }
 }
 
 std::string 
@@ -47,7 +55,7 @@ DecisionFunction::GetJson(const VarDb &db) const
    for(InstanceId id = 0; id < mFactorSize; id++)
    {
       char sz[20];
-      snprintf(sz, sizeof(sz), "%d", (mExtendedClauseVector[id] == 0)?0:1);
+      snprintf(sz, sizeof(sz), "%d", (int) mExtendedClauseVector[id]);
       s += sz;
       s += ",";
    }   

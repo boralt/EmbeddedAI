@@ -836,7 +836,7 @@ namespace bayeslib
 	   DecisionFunction(std::shared_ptr<Factor> f, VarId decisionNode);
 
 
-      bool GetDecision(InstanceId);
+      VarState GetDecision(InstanceId);
 
       // from UIElem
       virtual std::string GetJson(const VarDb &db) const override;

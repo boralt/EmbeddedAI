@@ -357,7 +357,7 @@ FactorSet::BuildDecision()
             VarType vtype = mDb.GetVarType(vid);
             if (vtype == VarType_Decision)
             {
-               // parents of decision nodes should be retain
+               // parents of decision nodes should be retained
 			   const VarSet &rVs = (*iter)->GetVarSet();
                vsRetain.MergeIn(rVs);
 			   vsRetain.MergeIn(vsHead);
@@ -378,7 +378,17 @@ FactorSet::BuildDecision()
          if((*iter2)->GetClauseHead().HasVar(varUtility))
          {
             std::shared_ptr<Factor> pFactor = (*iter2);
-            std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);  
+            // B.A. temporary
+            // std::string sDebug1 = pFactor->GetJson(mDb);
+            // printf("\n Interm quest: %s", sDebug1.c_str());
+
+
+            std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);
+
+            // B.A. temporary
+            // std::string sDebug2 = pResult->GetJson(mDb);
+            // printf("\n Interm result: %s\n", sDebug2.c_str());
+
             // pResult incrporates decision Function and new Factor
             // separate both
 
