@@ -468,11 +468,7 @@ int InitDecisionTest3(VarDb &db, FactorSet &fs)
                v = arGaussian[nDelta+5];
             if (ch == 0)   // if no Extra check, assume sensor is parked at zero
             {
-               if (nOffs ==0)
-                  v = 1.0F;
-               else
-                  v = 0.F;
-
+               v = 0.1;
             }
             flSensor2 << v ;
          }
@@ -520,16 +516,16 @@ int InitDecisionTest3(VarDb &db, FactorSet &fs)
 
             if(valAct == 1)
             {
-               valUtility -= 3.0F;    // cooling is expensive
+               valUtility -= 1.5F;    // cooling is expensive
             }
             else if(valAct == 2)
             {
-               valUtility -= 1.5F;    // heating is less expensive
+               valUtility -= 1.0F;    // heating is less expensive
             }
 
             if (valExtra)
             {
-               valUtility -= 2.0F;  // obtaining second reading is expensive
+               valUtility -= 3.0F;  // obtaining second reading is expensive
             }
             flUtility << valUtility;
          }
@@ -582,13 +578,13 @@ int DecisionTest3() {
    EXPECT_EQ(res1.GetVarSet().GetSize(), 1);
    EXPECT_EQ(res1.GetVarSet().GetFirst(), db["CheckExtra"]);
    EXPECT_FALSE(res1[db["CheckExtra"]]);
-   EXPECT_NEAR(-22.5, res1.GetVal(), 0.01);
+   EXPECT_NEAR(-5.23, res1.GetVal(), 0.01);
 
    res1 = dh->GetDecisions(Clause(db, { { db["Sensor1"] , 8 } }));
    EXPECT_EQ(res1.GetVarSet().GetSize(), 1);
    EXPECT_EQ(res1.GetVarSet().GetFirst(), db["CheckExtra"]);
    EXPECT_TRUE(res1[db["CheckExtra"]]);
-   EXPECT_NEAR(-4.97, res1.GetVal(), 0.01);
+   EXPECT_NEAR(-5.09, res1.GetVal(), 0.01);
 
 
 
@@ -597,18 +593,10 @@ int DecisionTest3() {
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["CheckExtra"]));
    EXPECT_TRUE(res1.GetVarSet().HasVar(db["Act"]));
    EXPECT_FALSE(res1[db["CheckExtra"]]);
-   EXPECT_EQ(res1[db["Act"]], 2);
-   EXPECT_NEAR(-3.37, res1.GetVal(), 0.01);
+   EXPECT_EQ(res1[db["Act"]], 0);
+   EXPECT_NEAR(-0.498, res1.GetVal(), 0.01);
 
 
-   // Reported and see smoke
-   res1 = dh->GetDecisions(Clause(VarSet(db, { db["Sensor1"], db["Sensor2"] }), 3*10 + 6));
-   EXPECT_EQ(res1.GetVarSet().GetSize(), 2);
-   EXPECT_TRUE(res1.GetVarSet().HasVar(db["CheckExtra"]));
-   EXPECT_TRUE(res1.GetVarSet().HasVar(db["Act"]));
-   EXPECT_TRUE(res1[db["CheckExtra"]]);
-   EXPECT_EQ(res1[db["Act"]], 1);
-   EXPECT_NEAR(-1.59, res1.GetVal(), 0.01);
 
    return 0;
 }
