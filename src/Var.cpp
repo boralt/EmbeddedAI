@@ -20,7 +20,7 @@ mName(sName), mId(id), mVarType(vtype)
     
       
 std::string 
-Var::GetJson(VarDb &db) const
+Var::GetJson(const VarDb &db) const
 {
    char sz[200];
 
@@ -39,4 +39,32 @@ Var::GetType() const
 {
       return "Var";
 }
- 
+
+VarState
+Var::AddState(std::string sName)
+{
+   mVarDomainStates.push_back(sName);
+   return (VarState)(mVarDomainStates.size() - 1);
+}
+
+std::string
+Var::GetState(VarState state) const
+{
+   return mVarDomainStates[state];
+}
+
+VarState
+Var::GetState(std::string sStateName) const
+{
+   mVarDomainStates;
+   auto it = std::find(mVarDomainStates.begin(), mVarDomainStates.end(), sStateName);
+   if (it == mVarDomainStates.end())
+   {
+      return (VarState) 0;
+   } else
+   {
+      return (VarState) std::distance(mVarDomainStates.begin(), it);
+   }
+}
+
+

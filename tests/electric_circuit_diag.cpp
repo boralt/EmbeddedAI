@@ -53,14 +53,14 @@ int InitCircuitTest(VarDb &db, FactorSet &fs)
    db.AddVar("O");
 
    // Input I
-   VarSet vsI;
+   VarSet vsI(db);
    vsI << db["I"];
    std::shared_ptr<Factor> fI = std::make_shared<Factor>(vsI, db["I"]);
    fI->AddInstance(0, 0.5F);
    fI->AddInstance(1, 0.5F);
 
    // Input J
-   VarSet vsJ;
+   VarSet vsJ(db);
    vsJ << db["J"];
    std::shared_ptr<Factor> fJ = std::make_shared<Factor>(vsJ, db["J"]);
    fJ->AddInstance(0, 0.5F);
@@ -68,21 +68,21 @@ int InitCircuitTest(VarDb &db, FactorSet &fs)
 
 
    // Output/Input Y
-   VarSet vsY;
+   VarSet vsY(db);
    vsY << db["J"] << db["Y"];
    std::shared_ptr<Factor> fY = std::make_shared<Factor>(vsY, db["Y"]);
    Factor::FactorLoader flY(fY);
    flY << 0.01F << 0.99F << 0.99F << 0.01F;
 
    // Output/Input X
-   VarSet vsX;
+   VarSet vsX(db);
    vsX << db["I"] << db["J"] << db["X"];
    std::shared_ptr<Factor> fX = std::make_shared<Factor>(vsX, db["X"]);
    Factor::FactorLoader flX(fX);
    flX << 0.95F << 0.95F << 0.95F << 0.05F << 0.05F << 0.05F << 0.05F << 0.95F;
 
    // Output O
-   VarSet vsO;
+   VarSet vsO(db);
    vsO << db["X"] << db["Y"] << db["O"];
    std::shared_ptr<Factor> fO = std::make_shared<Factor>(vsO, db["O"]);
    Factor::FactorLoader flO(fO);
@@ -112,7 +112,7 @@ int TestCircuit1()
    printf("\n==Circuit test with edge Pruning==\n%s\n", s.c_str());
 
 
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["J"] << db["O"];
    Clause cSample(vsSample);
 
@@ -131,7 +131,7 @@ int TestCircuit1()
    s = fs.GetJson(db);
    printf("\n =After apply =\n%s\n", s.c_str());
 
-   VarSet vsEliminate;
+   VarSet vsEliminate(db);
    vsEliminate << db["J"] << db["I"] << db["X"] << db["Y"] << db["O"];
    fs.MaximizeVar(vsEliminate);
 
@@ -172,13 +172,13 @@ int TestCircuit2()
    printf("\n==Circuit test MAP with NEtworl Pruning==\n%s\n", s.c_str());
 
 
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["O"];
    Clause cSample(vsSample);
    cSample.SetVar(db["O"], true);
 
    // solve for this variables
-   VarSet vsMap;
+   VarSet vsMap(db);
    vsMap << db["I"] << db["J"];
 
    VarSet vsEliminate = fs.GetVarSet()->Substract(vsMap);

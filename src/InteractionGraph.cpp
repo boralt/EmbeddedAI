@@ -12,7 +12,7 @@
 
 using namespace bayeslib;
 
-InteractionGraph::InteractionGraph(FactorSet *pFs)
+InteractionGraph::InteractionGraph(FactorSet *pFs) : mVarSet(pFs->GetDb())
 {
     mVarSet = *pFs->GetVarSet().get();
     for(FactorSet::ListFactors::const_iterator iter = pFs->GetFactors().begin();
@@ -47,7 +47,7 @@ InteractionGraph::InteractionGraph(FactorSet *pFs)
 VarSet
 InteractionGraph::GetElimOrder()
 {
-    VarSet res;
+    VarSet res(mVarSet.GetDb());
 
     while(!mEdges.empty())
     {

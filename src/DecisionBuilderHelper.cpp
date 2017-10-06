@@ -13,7 +13,7 @@
 using namespace bayeslib;
 
 std::string 
-DecisionBuilderHelper::GetJson(VarDb &db) const
+DecisionBuilderHelper::GetJson(const VarDb &db) const
 {
     std::string res;
     res = "{decisions:[ ";
@@ -32,7 +32,7 @@ DecisionBuilderHelper::GetJson(VarDb &db) const
 ClauseValue 
 DecisionBuilderHelper::GetDecisions(const Clause &sample)
 {
-	ClauseValue res;
+	ClauseValue res(sample.GetVarSet().GetDb());
 	ValueType val = 0;
 
 	Clause clauseAllData(sample);			// this clause includes sample and decisions

@@ -42,21 +42,21 @@ int Test1_1()
    db.AddVar("result");
 
    // Player plays injury free 80% of the time
-   VarSet vs1;
+   VarSet vs1(db);
    vs1 << db["injury"];
    std::shared_ptr<Factor> fInjury = std::make_shared<Factor>(vs1);
    fInjury->AddInstance(0, 0.8F);
    fInjury->AddInstance(1, 0.2F);
 
    // Player prepaired for game 90% of the time
-   VarSet vs2;
+   VarSet vs2(db);
    vs2 << db["prep"];
    std::shared_ptr<Factor> fPrep = std::make_shared<Factor>(vs2);
    fPrep->AddInstance(0, 0.1F);
    fPrep->AddInstance(1, 0.9F);
 
    // Probalities of win based on injury and preparations
-   VarSet vs3;
+   VarSet vs3(db);
    vs3 << db["injury"];
    vs3 << db["prep"];
    vs3 << db["result"];
@@ -73,7 +73,7 @@ int Test1_1()
    printf("\n=== TEST 1 ===\n%s\n", s.c_str());
 
    // calculate overall probability of Win for this player 
-   VarSet vsEliminate;
+   VarSet vsEliminate(db);
    vsEliminate << db["injury"] << db["prep"];
    fs.EliminateVar(vsEliminate);
    s = fs.GetJson(db);
@@ -95,19 +95,19 @@ int Test1_3()
    db.AddVar("prep");
    db.AddVar("result");
 
-   VarSet vs1;
+   VarSet vs1(db);
    vs1 << db["injury"];
    std::shared_ptr<Factor> fInjury = std::make_shared<Factor>(vs1);
    fInjury->AddInstance(0, 0.9F);
    fInjury->AddInstance(1, 0.1F);
 
-   VarSet vs2;
+   VarSet vs2(db);
    vs2 << db["prep"];
    std::shared_ptr<Factor> fPrep = std::make_shared<Factor>(vs2);
    fPrep->AddInstance(0, 0.2F);
    fPrep->AddInstance(1, 0.8F);
 
-   VarSet vs3;
+   VarSet vs3(db);
    vs3 << db["injury"];
    vs3 << db["prep"];
    vs3 << db["result"];
@@ -124,7 +124,7 @@ int Test1_3()
    printf("\n===TEST 3===\n%s\n", s.c_str());
 
    // observation result is false (player lost)
-   VarSet vsSample;
+   VarSet vsSample(db);
    vsSample << db["result"];
    Clause cSample(vsSample);
    cSample.SetVar(db["result"], false);
@@ -138,14 +138,14 @@ int Test1_3()
 
    FactorSet fs2 = fs;      // copy of factorset 
 
-   VarSet vsEliminateInjury;
+   VarSet vsEliminateInjury(db);
    vsEliminateInjury << db["result"] << db["injury"];
    fs.EliminateVar(vsEliminateInjury);
    std::shared_ptr<Factor> res1 = fs.Merge()->Normalize();
    s = res1->GetJson(db);
    printf("\n==After Eliminate Injury==\n%s\n", s.c_str());
 
-   VarSet vsEliminatePrep;
+   VarSet vsEliminatePrep(db);
    vsEliminatePrep << db["prep"] << db["result"];
    fs2.EliminateVar(vsEliminatePrep);
    std::shared_ptr<Factor> res2 = fs2.Merge()->Normalize();

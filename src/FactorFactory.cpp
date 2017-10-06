@@ -18,11 +18,11 @@ FactorFactory::Create(VarDb &db, Json::Value &vFactorDescrJson)
     // std::shared_ptr<Factor> res = new Factor();
 
     if(!vFactorDescrJson.isMember("vars"))
-        return EmptyFactor();
+        return EmptyFactor(db);
 
     Json::Value &vars = vFactorDescrJson["vars"];
     
-    VarSet headVars;
+    VarSet headVars(db);
     if (vFactorDescrJson.isMember("head"))
     {
        headVars = VarSetFactory::Create(db, vFactorDescrJson["head"]);
@@ -30,7 +30,7 @@ FactorFactory::Create(VarDb &db, Json::Value &vFactorDescrJson)
 
     VarSet vs = VarSetFactory::Create(db, vars);
     if (!vs.GetSize())
-        return EmptyFactor();
+        return EmptyFactor(db);
     std::shared_ptr<Factor> res = std::make_shared<Factor>(vs, headVars);
 
     //no available values
@@ -51,9 +51,9 @@ FactorFactory::Create(VarDb &db, Json::Value &vFactorDescrJson)
 } 
 
 std::shared_ptr<Factor>
-FactorFactory::EmptyFactor()
+FactorFactory::EmptyFactor(VarDb &db)
 {
-   VarSet vs;
+   VarSet vs(db);
    return std::make_shared<Factor>(vs);
 }
 

@@ -51,7 +51,7 @@ FactorSet::Merge()
     }
 
     if (!res)
-       res = std::make_shared<Factor>(VarSet()); 
+       res = std::make_shared<Factor>(VarSet(mDb)); 
     return res;
 }
 
@@ -60,7 +60,7 @@ std::shared_ptr<VarSet>
 FactorSet::GetTypedVarSet(VarId vid, VarType vartype, VarDb &db)
 {
 	std::shared_ptr<VarSet> res = GetAncestors(vid);
-	VarSet res2 = res->FilterVarSet(db, vartype);
+	VarSet res2 = res->FilterVarSet(vartype);
 		
 	return res;
 }
@@ -68,7 +68,7 @@ FactorSet::GetTypedVarSet(VarId vid, VarType vartype, VarDb &db)
 std::shared_ptr<VarSet> 
 FactorSet::GetVarSet() const
 {
-	std::shared_ptr<VarSet> res(new VarSet);
+	std::shared_ptr<VarSet> res(new VarSet(mDb));
 
 	for (auto iter = mFactors.begin();
 		iter != mFactors.end(); ++iter)
@@ -103,7 +103,7 @@ FactorSet::GetAncestors(VarId vid)
 
 
 
-	std::shared_ptr<VarSet> res(new VarSet);
+	std::shared_ptr<VarSet> res(new VarSet(mDb));
 
 	if (!pTestFactor)
 	{
@@ -127,7 +127,7 @@ std::shared_ptr<VarSet>
 FactorSet::GetLeafNodes() const
 {
 
-	VarSet fsNonLeafs;
+	VarSet fsNonLeafs(mDb);
 	for (auto iter = mFactors.begin();
 		iter != mFactors.end(); ++iter)
 	{
@@ -143,7 +143,7 @@ std::shared_ptr<VarSet>
 FactorSet::GetAncestors(VarId vid, VarType vartype)
 {
 	std::shared_ptr<VarSet> res = GetAncestors(vid);
-	VarSet res2 = res->FilterVarSet(mDb, vartype);
+	VarSet res2 = res->FilterVarSet(vartype);
 		
 	return std::make_shared<VarSet>(res2);
 }
@@ -153,9 +153,10 @@ FactorSet::GetAncestors(VarId vid, VarType vartype)
 void  
 FactorSet::EliminateVar(const VarSet &vs)
 {
-	std::string s = vs.GetJson();
+   std::string s = vs.GetJson(mDb);
 	if(mDebugLevel >= DebugLevel_Details) 
 	{
+      std::string s = vs.GetJson(mDb);
 		printf("===Eliminate Vars %s ===\n", s.c_str());
 	}
 
@@ -259,7 +260,7 @@ FactorSet::BuildDecision()
 
    // Find Utility Variable
    std::shared_ptr<VarSet> vsAll = GetVarSet();
-   VarSet vs = vsAll->FilterVarSet(mDb, VarType_Utility);
+   VarSet vs = vsAll->FilterVarSet(VarType_Utility);
    int nError = 0;
 
    //printf("VarSet all: %s\n", vsAll->GetJson(db).c_str());
@@ -279,14 +280,14 @@ FactorSet::BuildDecision()
    std::shared_ptr<VarSet> vsUtilityAnsestors = 
                            GetAncestors(varUtility);   
    VarSet vsToRemove = vsAll->Substract(*vsUtilityAnsestors);
-   vsToRemove = vsToRemove.Substract(VarSet(varUtility));
+   vsToRemove = vsToRemove.Substract(VarSet(mDb,varUtility));
    
    // 1. Remove variables that are not ancestors of utility
    if(vsToRemove.GetSize() > 0)
 		RemoveVars(vsToRemove);	
 
    // 2.1 Build Varsets
-   VarSet vsDecisions;
+   VarSet vsDecisions(mDb);
    VarId  vidUtility = 0; 
 
    // Calculate important varsets
@@ -345,7 +346,7 @@ FactorSet::BuildDecision()
       if(vidDecision == 0)
          continue;
 
-      VarSet vsRetain;
+      VarSet vsRetain(mDb);
       for(ListFactors::iterator iter = mFactors.begin();
                 iter != mFactors.end(); ++iter)
       {
@@ -356,7 +357,7 @@ FactorSet::BuildDecision()
             VarType vtype = mDb.GetVarType(vid);
             if (vtype == VarType_Decision)
             {
-               // parents of decision nodes should be retain
+               // parents of decision nodes should be retained
 			   const VarSet &rVs = (*iter)->GetVarSet();
                vsRetain.MergeIn(rVs);
 			   vsRetain.MergeIn(vsHead);
@@ -377,7 +378,17 @@ FactorSet::BuildDecision()
          if((*iter2)->GetClauseHead().HasVar(varUtility))
          {
             std::shared_ptr<Factor> pFactor = (*iter2);
-            std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);  
+            // B.A. temporary
+            // std::string sDebug1 = pFactor->GetJson(mDb);
+            // printf("\n Interm quest: %s", sDebug1.c_str());
+
+
+            std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);
+
+            // B.A. temporary
+            // std::string sDebug2 = pResult->GetJson(mDb);
+            // printf("\n Interm result: %s\n", sDebug2.c_str());
+
             // pResult incrporates decision Function and new Factor
             // separate both
 
@@ -527,7 +538,7 @@ FactorSet::ApplyClause(const Clause &c)
 
 
 std::string 
-FactorSet::GetJson(VarDb &db) const
+FactorSet::GetJson(const VarDb &db) const
 {
     std::string res;
     res = "{factors:[ ";

@@ -41,12 +41,14 @@ typedef uint64_t u64;
 
 #define DBC_CHECK_VID(vid) DBC_CHECK(vid > 0 && vid < MAX_SET_SIZE, "VariableId is out of range")
 
-typedef u32 InstanceId;
+typedef u64 InstanceId;
 typedef unsigned int VarId;
 typedef float ValueType;
+// Value of variable within its domain definition
+typedef u8 VarState;
 
 template <class T>
-char * AddJsonAttr(char *pBuffer, u32 bufSize, const char *pName, const char *pFormat, T val)
+char * AddJsonAttr(char *pBuffer, u32 bufSize, const char *pName, const char *pFormat,const T val)
 {
    char szFormat[40];
    snprintf(szFormat, sizeof(szFormat), "\"%s\":\"%s\",", "%s", pFormat);

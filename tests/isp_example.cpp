@@ -41,7 +41,7 @@ int InitIspExample(VarDb &db, FactorSet &fs)
 
                          // Create Factor Sched which is just a probability that Maintainance
                          // scheduled at any given time
-   VarSet vsSched;
+   VarSet vsSched(db);
    vsSched << db["Sched"];
    std::shared_ptr<Factor> fSched = std::make_shared<Factor>(vsSched, vsSched);
    fSched->AddInstance(0, 0.96F);  // not scheduled 96% of the time
@@ -49,37 +49,37 @@ int InitIspExample(VarDb &db, FactorSet &fs)
 
                                    // Create Factor with bad Weather probability
                                    // Another method of initialization
-   std::shared_ptr<Factor> fWeather(new Factor({ db["Weather"] }, { db["Weather"] }));
+   std::shared_ptr<Factor> fWeather(new Factor(db, { db["Weather"] }, { db["Weather"] }));
    (*fWeather) << 0.995F << fin;  // 99.5% of the time weather is not bad
                                   //fWeather->AddInstance(1, 0.005);    * not needed as fin manipulator above does that
 
                                   // Create Factorwith probabilities of internet congestion 
-   std::shared_ptr<Factor> fCong(new Factor({ db["Cong"] }, { db["Cong"] }));
+   std::shared_ptr<Factor> fCong(new Factor(db, { db["Cong"] }, { db["Cong"] }));
    (*fCong) << 0.98F << fin;  // 98% of timethere is no congestion
 
 
                               // Create factor with conditional probability of schedule was set for this maintainance 
-   std::shared_ptr<Factor> fMaint(new Factor({ db["Sched"], db["Maint"] }, { db["Maint"] }));
+   std::shared_ptr<Factor> fMaint(new Factor(db, { db["Sched"], db["Maint"] }, { db["Maint"] }));
    (*fMaint) << 0.99F << 0.4F << fin;  // 99% no unscheduled maintiannace, 40% sheduled maintainance is not performed
 
                                        // Create factor with conditional probabilities of Alert based on Weather Condition  
-   std::shared_ptr<Factor> fAlert(new Factor({ db["Weather"], db["Alert"] }, { db["Alert"] }));
+   std::shared_ptr<Factor> fAlert(new Factor(db, { db["Weather"], db["Alert"] }, { db["Alert"] }));
    (*fAlert) << 0.998F << 0.3F << fin;  // 99.8% no bad weather will not alert, 30% bad weather will not cause alert
 
                                         // Create factor with conditional probabilities of packet drop based on Internet Congestion
-   std::shared_ptr<Factor> fDrop(new Factor({ db["Cong"], db["Drop"] }, { db["Drop"] }));
+   std::shared_ptr<Factor> fDrop(new Factor(db, { db["Cong"], db["Drop"] }, { db["Drop"] }));
    (*fDrop) << 0.995F << 0.4F << fin;  // 99.5% no congestion pings will notdrop, 40% congestion packet will not drop
 
                                        // probability of damage based on weather condition and maintainace 
-   std::shared_ptr<Factor> fDamage(new Factor({ db["Weather"], db["Maint"], db["Damage"] }, { db["Damage"] }));
+   std::shared_ptr<Factor> fDamage(new Factor(db, { db["Weather"], db["Maint"], db["Damage"] }, { db["Damage"] }));
    (*fDamage) << 0.997F << 0.94F << 0.96F << 0.84F << fin;
 
    // probability of outage based on weather, maintainance and congestion
-   std::shared_ptr<Factor> fOutage(new Factor({ db["Weather"], db["Maint"], db["Cong"], db["Outage"] }, { db["Outage"] }));
+   std::shared_ptr<Factor> fOutage(new Factor(db, { db["Weather"], db["Maint"], db["Cong"], db["Outage"] }, { db["Outage"] }));
    (*fOutage) << 0.99F << 0.92F << 0.9F << 0.88F << 0.8F << 0.82F << 0.85F << 0.78F << fin;
 
    // probability of service call based on damage and outage
-   std::shared_ptr<Factor> fCall(new Factor({ db["Damage"], db["Outage"], db["Call"] }, { db["Call"] }));
+   std::shared_ptr<Factor> fCall(new Factor(db, { db["Damage"], db["Outage"], db["Call"] }, { db["Call"] }));
    (*fCall) << 0.99F << 0.6F << 0.8F << 0.6F << fin;
 
    // add all asemled factor to factorset
@@ -112,15 +112,15 @@ int InitIspDecisionExample(VarDb &db, FactorSet &fs)
    db.AddVar("Utility", VarType_Utility);      // Utility node to truck expense of sending crew and loss of unsatisfied customers
 
    // Customer loss node
-   std::shared_ptr<Factor> fCustomerLoss = std::shared_ptr<Factor>(new Factor({ db["Call"], db["Damage"], db["SendCrew"], db["CustomerLoss"] }, db["CustomerLoss"]));
-   *fCustomerLoss << 0.999F << 0.995F << 0.97F << 0.7F << 0.999F << 0.998F << 0.997 << 0.985 << fin;
+   std::shared_ptr<Factor> fCustomerLoss = std::shared_ptr<Factor>(new Factor(db, { db["Call"], db["Damage"], db["SendCrew"], db["CustomerLoss"] }, { db["CustomerLoss"] }));
+   *fCustomerLoss << 0.999F << 0.995F << 0.97F << 0.7F << 0.999F << 0.998F << 0.997F << 0.985F << fin;
 
 
-   std::shared_ptr<Factor> fSendCrew = std::shared_ptr<Factor>(new Factor({ db["Sched"], db["Alert"],db["Drop"], db["Call"], db["SendCrew"] }, db["SendCrew"]));
+   std::shared_ptr<Factor> fSendCrew = std::shared_ptr<Factor>(new Factor(db, { db["Sched"], db["Alert"],db["Drop"], db["Call"], db["SendCrew"] }, { db["SendCrew"] }));
    fSendCrew->SetFactorType(VarType_Decision);
 
    // Utility
-   VarSet vsUtility;
+   VarSet vsUtility(db);
    vsUtility << db["Weather"] << db["Maint"] << db["SendCrew"]  << db["CustomerLoss"];
    std::shared_ptr<Factor> fUtility = std::make_shared<Factor>(vsUtility, db["Utility"]);
    *fUtility << 0. << 0. << 0. << 0. << -300. << -400. << -500. << -600. << -5000. << -5000. << -5000. << -5000. << -5300. << -5400. << -5500. << -5600.;
@@ -173,7 +173,7 @@ int IspTest1()
 
    {
       FactorSet fs = fsInitial;
-      Clause cSample({
+      Clause cSample(db, {
          { db["Sched"], true },{ db["Drop"], false },
          { db["Alert"], true },{ db["Call"],true }
       });
@@ -214,7 +214,7 @@ int IspTest1()
       FactorSet fs = fsInitial;
 
       // another run wit the same model but sample is different
-      Clause cSample({ { db["Sched"], true },{ db["Drop"], false },
+      Clause cSample(db, { { db["Sched"], true },{ db["Drop"], false },
       { db["Alert"], false },{ db["Call"], true } });
       printf("\n== Sample = %s\n", cSample.GetJson(db).c_str());
 
@@ -277,7 +277,7 @@ int IspTest2()
    {
       //Run 1
       FactorSet fs = fsInitial;
-      Clause cSample({
+      Clause cSample(db, {
          { db["Sched"], true },{ db["Drop"], false },
          { db["Alert"], true },{ db["Call"],true }
       });
@@ -285,7 +285,7 @@ int IspTest2()
       printf("\n== Sample = %s\n", cSample.GetJson(db).c_str());
 
       // Evaluate most likely combination
-      VarSet vsMap({ db["Damage"], db["Outage"] });
+      VarSet vsMap(db, { db["Damage"], db["Outage"] });
       // all other variables can be eliminated
       VarSet vsEliminate = fs.GetVarSet()->Substract(vsMap);
       // find if any variables that can be pruned 
@@ -306,7 +306,7 @@ int IspTest2()
    {
       FactorSet fs = fsInitial;
 
-      Clause cSample({
+      Clause cSample(db, {
          { db["Sched"], true },{ db["Drop"], false },
          { db["Alert"], false },{ db["Call"],true }
       });
@@ -314,7 +314,7 @@ int IspTest2()
       printf("\n== Sample = %s\n", cSample.GetJson(db).c_str());
 
       // Evaluate most likely combination
-      VarSet vsMap({ db["Damage"] , db["Outage"] });
+      VarSet vsMap(db, { db["Damage"] , db["Outage"] });
       // all other variables can be eliminated
       VarSet vsEliminate = fs.GetVarSet()->Substract(vsMap);
       // find if any variables that can be pruned 
@@ -365,7 +365,7 @@ int IspDecisionExample()
    if (dh->GetSize() != 1)
       return -1;
 
-   ClauseValue res1 = dh->GetDecisions(Clause({
+   ClauseValue res1 = dh->GetDecisions(Clause(db, {
       { db["Call"] , true },
       { db["Alert"] , true },
       { db["Sched"], false },
@@ -379,7 +379,7 @@ int IspDecisionExample()
 
 
 
-   ClauseValue res2 = dh->GetDecisions(Clause({ 
+   ClauseValue res2 = dh->GetDecisions( Clause(db, { 
                                        { db["Call"] , true }, 
                                        { db["Alert"] , false }, 
                                        { db["Sched"], false }, 

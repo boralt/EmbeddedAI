@@ -19,7 +19,7 @@ namespace bayeslib
     {
       public:
         static std::shared_ptr<Factor> Create(VarDb &db,  Json::Value &vFactorDescrJson);
-        static std::shared_ptr<Factor> EmptyFactor();
+        static std::shared_ptr<Factor> EmptyFactor(VarDb &db);
     };
 
     class VarSetFactory

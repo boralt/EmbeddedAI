@@ -59,7 +59,7 @@ namespace bayeslib
          virtual std::string GetType() const = 0;
 
          /// Get JSON presentation of the object
-         virtual std::string GetJson(VarDb &db) const = 0;
+         virtual std::string GetJson(const VarDb &db) const = 0;
    };
 
    /** Define`s a node on a Beysian Graph
@@ -73,24 +73,45 @@ namespace bayeslib
        Var(std::string sName, VarId id, VarType vtype=VarType_Normal);
        
       /// from UIElem
-      std::string GetJson(VarDb &db) const override;
+      std::string GetJson(const VarDb &db) const override;
       std::string GetType() const override;
 
 	  /// Is it a special Null Variable
-      bool IsNull() { return !mId;}
+      bool IsNull() const { return !mId;}
  
 	  /// Get Printable name 
-      const std::string & GetName() { return mName; }
+      const std::string & GetName() const { return mName; }
 
 	  /// Get Id
-      VarId GetId() { return mId; }
+      VarId GetId() const { return mId; }
 
+      /// Get Type of Variable
+      /// @return Type of this variable
       VarType GetVarType() const { return mVarType;}
+
+      /// Add state definitionforthis variable
+      /// @param sName name of domain state of this variable
+      /// @return assigned state value 
+      VarState AddState(std::string sName);
+
+      /// Get domain state name 
+      /// @param VarState value
+      /// @return name of the state
+      std::string GetState(VarState state) const;
+
+      /// Get domain state name 
+      /// @param  of the state
+      /// @return VarState value name 
+      VarState GetState(std::string sStateName) const;
+
+      size_t GetDomainSize() const { return mVarDomainStates.size(); }
 
        protected:
        std::string mName;
        VarId mId;
        VarType mVarType;
+       std::vector<std::string> mVarDomainStates;
+
    };
 
    /** Subset of Nodes on a Graph
@@ -102,7 +123,7 @@ namespace bayeslib
 
    public:
 	  /// Constructor for Empty varset
-     VarSet();
+     VarSet(const VarDb &db);
 
 	  // Copy Constructor
      //VarSet(const VarSet &vs) : mList(vs.mList) {}
@@ -110,11 +131,11 @@ namespace bayeslib
 
 	  /// Construct VarSet with single variable.
      /// @param v variable id in varset 
-	  VarSet(const VarId v);
+	  VarSet(const VarDb &db, const VarId v);
 
 	  /// Constuct with initializer list of variable ids
      /// @param initlist {} list of variables
-	  VarSet(std::initializer_list<VarId> initlist);
+	  VarSet(const VarDb &db, std::initializer_list<VarId> initlist);
 
 	  /// Default Destructor 
      virtual ~VarSet() = default;
@@ -122,7 +143,16 @@ namespace bayeslib
      /// Compare varsets
 	  bool operator ==(const VarSet &another) const;
 
-	  /// Add variable to VarSet
+     VarSet & operator=(const VarSet &another)
+     {
+        mCachedInstances = another.mCachedInstances;
+        mList = another.mList;
+        mOffsetMapping = another.mOffsetMapping;
+        return *this;
+     }
+
+
+	 /// Add variable to VarSet
      /// @param id variable to add to VarSet
      void Add(VarId id);
 
@@ -155,20 +185,19 @@ namespace bayeslib
      /// @param vdb reference to database of all Variables in the graph
      /// @param vartype VarType to search in this VarSet
      /// @return true if vartype is present 
-     bool HasVarType(const VarDb &vdb, VarType vartype) const;
+     bool HasVarType(VarType vartype) const;
 
 	  /// produce a subsetof varset with vartype variables
      /// @param vdb reference to database of all Variables in the graph
      /// @param vartype VarType to search in this VarSetset of #vartype type
      /// @return VarSet containing variables in this Var
-	  VarSet FilterVarSet(const VarDb &vdb, VarType vartype);
+	  VarSet FilterVarSet(VarType vartype);
 
 	  /// Get Number of variables
      /// @return Number variales is VarSet
       unsigned int GetSize() const;
 
       /// Number of clauses defined by this Varset
-      /// it is normally 2**GetSize()
       /// @return number of istances of Clauses in this VarSet
       InstanceId GetInstances() const;
 
@@ -187,11 +216,61 @@ namespace bayeslib
       ///         returns 0 if variableis not present in this VarSet
       int GetOffs(VarId varid) const;
 
+      /// Get Parameters of variable inside VarSet
+      /// @param varid Id of variable in varset
+      /// @param varMulriplier out parameter for multiplier of variable in this VarSet
+      /// @param varSize domain size of this Variable
+      void GetVarParams(VarId varid, InstanceId &varMultiplier, int &varSize);
+
+      /// Get contribution of VarId to the Instance value of VarSe
+      /// @param id VarId id of variable
+      /// @param v  VarState state of Variable in its domain
+      /// @return contribution of this variable in InsecnceId value of clause based on this VarSet
+      InstanceId GetInstanceComponent(VarId id, VarState v)
+      {
+         int offs = mOffsetMapping[id];
+         if (offs < 0)
+            return 0;
+
+         return _GetByOffset(offs).mMultiplier*v;
+
+      }
+
+      /// Get contribution of Var found by offset to the Instance value of VarSe
+      /// @param id int offs offset of variable
+      /// @param v  VarState state of Variable in its domain
+      /// @return contribution of this variable in InsecnceId value of clause based on this VarSet
+      InstanceId GetInstanceComponentByOffs(int offs, VarState v)
+      {
+         if (offs < 0)
+            return 0;
+
+         return _GetByOffset(offs).mMultiplier*v;
+
+      }
+
+      /// Fetch individual Variable component from InstanceId  representation
+      /// @param id variable id
+      /// @param instanceId instanceId withi this varSet
+      VarState FetchVarState(VarId  id, InstanceId instanceId);
+
+      /// Fetch individual Variable component from InstanceId  representation
+      /// @param id variable id
+      /// @param instanceId instanceId withi this varSet
+      VarState FetchVarStateByOffs(int offs, InstanceId instanceId);
+
+      /// Convert to clause array
+      /// @param instanceId of clause
+      /// @return array of Variable states scaled to maximum allowed varset
+      std::array<VarState, MAX_SET_SIZE> ConvertVarArray(InstanceId instanceId);
+
+
+
       /// Abbreviated Json output, doesn't resolve VarIds tonames
-	   std::string GetJson() const;
+	   std::string GetJsonAbbrev() const;
 
       // from UIElem
-	   std::string GetJson(VarDb &db) const override;
+	   std::string GetJson(const VarDb &) const override;
       std::string GetType() const override;
 
       /// Test is VarSet is empty
@@ -208,17 +287,46 @@ namespace bayeslib
       /// @return result of union between two VarSets
       VarSet Disjuction(const VarSet &vs) const;
 
-      // Create VarSet that includes all variables in this VarSet not present in another VarSet
+      /// Create VarSet that includes all variables in this VarSet not present in another VarSet
       /// @param vs VarSet will be substracted from this VarSet
       /// @return result of substraction from this VarSet
       VarSet Substract(const VarSet &vs) const;
 
+      /// Get DB that this VarSet is based on
+      /// @return VarDb
+      const VarDb &GetDb() const { return mDb;}
+
    protected:
 
-      std::list<VarId> mList;
+      class VarOperator
+      {
+      public:
 
-	  // optimization mapping of VarId to indexin mList
-	  std::array<int, MAX_SET_SIZE> mOffsetMapping; 
+         VarOperator(VarId id, u8 var_size, InstanceId multiplier) :
+            mId(id), mMultiplier(multiplier), mSize(var_size) 
+         {
+            if (mMultiplier == 0)
+            {
+               // mMultiplier = mSize / 0;
+            }
+         }
+
+         VarId mId;
+         InstanceId mMultiplier;
+         int mSize;
+      };
+
+      const VarOperator & _GetByOffset(int offs);
+      mutable InstanceId mCachedInstances;
+      std::list<VarOperator> mList;
+
+      VarOperator GetOpByOffset(int offs);
+
+	   // optimization mapping of VarId to indexin mList
+      std::array<int, MAX_SET_SIZE> mOffsetMapping;
+      void _Add(VarId id);
+      InstanceId _GetInstances() const;
+      const VarDb &mDb;
 
    };
 
@@ -234,10 +342,15 @@ namespace bayeslib
        /// Constructor
        VarDb();
       
-       /// Add variabe to VarDb
+       /// Add variabe with boolean domain to VarDb
        /// @param sName name of variable
-       /// @vtype typeof variable
-       void AddVar(std::string sName, VarType vtype = VarType_Normal);
+       /// @param vtype typeof variable
+	   void AddVar(std::string sName, VarType vtype = VarType_Normal);
+
+	   /// Add Variable with domain to VarDb
+	   /// @param vtype typeof variable
+	   void AddVar(std::string, std::initializer_list<const char *> initlist, VarType vtype = VarType_Normal);
+
 
        /// Find if variable exists in VarDb
        /// @param sName name of variable to check
@@ -246,12 +359,12 @@ namespace bayeslib
        /// Map Variable name to VarId
        /// @param s name of variable to search
        /// @return VarId if variable found, 0  otherwise
-       VarId operator[](const std::string &s);
+       VarId operator[](const std::string &s) const;
 
        /// Map Variable id to name
        /// @param id VarId to search
        /// @return name if variable found,empty otherwise
-       std::string operator[](VarId id);
+       std::string operator[](VarId id) const;
 
       /// Get Json
       /// @returns Json string with all variables information
@@ -270,12 +383,28 @@ namespace bayeslib
       /// @return VarType of variable
       VarType GetVarType(VarId id) const ;
 
+      Var GetVar(VarId id) const
+      {
+         if(id != 0 && mAr.size() >= id)
+         {
+            return mAr[id-1];
+         }
+         return NullVar();
+      }
+
+      VarState JsonValToState(VarId id, const Json::Value &v) const;
+
        protected:
        using VarMap = std::map<std::string, VarId>; 
        VarMap mMap;
 
-       std::vector<std::string> mAr;
+       std::vector<Var> mAr;
        std::vector<VarType> mArVarTypes;
+      static Var NullVar()
+      {
+         return Var("null", 0);
+      }
+
 
    };
             
@@ -284,7 +413,7 @@ namespace bayeslib
    struct ClauseInitializer
    {
       VarId varid;    ///< VarId of variable inside the clause 
-      bool bState;    ///< state of variable inside a clause
+      VarState nState;    ///< state of variable inside a clause
    };
    
    /// Clause is one instance/occurance for VarSet (subset of domain variables)
@@ -300,7 +429,7 @@ namespace bayeslib
        
        /// Empty constructor. 
        /// Constructs Clause with empty VarSet
-       Clause();
+       Clause(const VarDb &db);
 
        /// Construct Clause from VarSet
        /// the instanceId is assigned to 0 -- all Variables in VarSet are false 
@@ -318,7 +447,7 @@ namespace bayeslib
        /// @param vs VarSet of variavles in this VarSet
        /// @param clause is a bitset of with values for variables. This bitset is arranged in order of VarIds variables in domain
        ///        and therefore VarSet independent 
-       Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause);
+       // Clause(const VarSet &vs, const std::bitset<MAX_SET_SIZE> &clause);
 
        /// Construct Clause from VarSet and integral InstanceId 
        /// Since InstanceId is dependent on VarSet order it is usefull to constructing Clauses of same VarSets
@@ -329,22 +458,31 @@ namespace bayeslib
 
        /// Construct Clause with list of ClauseInitializers
        /// @param initlist initializer list of ClauseInitializers 
-       Clause(std::initializer_list<ClauseInitializer> initlist);
+       Clause(const VarDb &db, std::initializer_list<ClauseInitializer> initlist);
 
-       /// Add Variable to the Clause and assign it the value
+
+      /// Construct clause from Varset and array of Variable values
+      /// @param vs VarSet this varset is based on
+      /// @param clause array of values.
+      /// @note clause paramter doesn't have to exacltly match set in VarSet
+      Clause(const VarSet &vs, const std::array<VarState ,MAX_SET_SIZE> &clause);
+
+
+
+      /// Add Variable to the Clause and assign it the value
        /// @param id VarId to variable to add. If variable already in the Clause, just set its value
        /// @param bVal value to set
-       void AddVar(VarId id, bool bVal);
+       void AddVar(VarId id, VarState nVal);
 
        /// Set value to variable in the set
        /// @param id If variable already in the Clause,  sets its value. Otherwiae NoOp
        /// @param bVal value to set
-       void SetVar(VarId id, bool bVal);
+       void SetVar(VarId id, VarState nVal);
 
        /// Get value of variable in the clause
        /// @param vid VarId of value to get
        /// @return value of #vid if present in VarSet, false otherwise
-       bool GetVar(VarId vid) const;
+       VarState GetVar(VarId vid) const;
 
        /// Move this clause to next possible instance, wrappped around to 0 (all Variables are set to false)
        /// @return true if wraparound has occured
@@ -355,8 +493,8 @@ namespace bayeslib
        bool Decr();
 
        /// Same        /// @param vid VarId of value to get
-       /// @return value of #vid if present in VarSet, false otherwise   
-	    bool operator [](VarId vid)  const { return GetVar(vid); }
+       /// @return value of #vid if present in VarSet   
+	   VarState operator [](VarId vid)  const { return GetVar(vid); }
 
        /// Get VarSet of the Clause
        /// @return VarSet subset of Domain Variables
@@ -367,9 +505,8 @@ namespace bayeslib
 
       // from UIElem
       /// Get Json representation of this Clause
-      /// @param db DB of variables in this domain
       /// @return string with Json representatin of this clause
-      virtual std::string GetJson(VarDb &)const override;
+      virtual std::string GetJson(const VarDb &)const override;
 
       /// return "Clause"
       virtual std::string GetType() const override;
@@ -392,7 +529,7 @@ namespace bayeslib
        protected:
        void UpdateClause();
 
-       std::bitset<MAX_SET_SIZE> mClause;
+       std::array<VarState, MAX_SET_SIZE> mClause;
        InstanceId mInstanceId;
        VarSet mVarSet; 
 
@@ -404,7 +541,7 @@ namespace bayeslib
    class ClauseValue : public Clause
    {
    public:
-
+      
       /// Template constructor uses any of VarSet constructors and assignes value 0f 0.0F
 	   template<typename ...Args>  ClauseValue(Args && ... args) :
 		   Clause(std::forward<Args>(args) ...), mVal(0)
@@ -478,7 +615,7 @@ namespace bayeslib
       // perfect forwarding constructor
       // @param varset initializer list for full varset for this Factor
       // @param clauseHead VarSet for Head of this Factor
-      Factor(std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead);
+      Factor(const VarDb &db, std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead);
 
       /// Set Value to any row (Clause) in a table
       /// @param instance InstanceId representing Clause (row) in this table
@@ -605,13 +742,13 @@ namespace bayeslib
      /// @param v VarId of variable to eliminate
      /// @param val value of variable that matches rows that will be retained in returned VarSet
      /// @return Factor with eliminated variable
-     std::shared_ptr<Factor> PruneEdge(VarId v, bool val);
+     std::shared_ptr<Factor> PruneEdge(VarId v, VarState val);
 
       // from UIElem
       /// produce Json representation of the Factor
       /// @param VarDb of domain variables
       /// @return string with Json representation of VarSet
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
 
       /// returns "Factor"
       virtual std::string GetType() const override;
@@ -663,6 +800,8 @@ namespace bayeslib
 
         void Init();
 
+        const VarDb &GetDb() { return mSet.GetDb(); }
+
         std::bitset<MAX_SET_SIZE> mBsPresent;
         std::map<VarId, int> mVarToIndex;      // variable to offset in varset
         VarSet mSet;
@@ -697,10 +836,10 @@ namespace bayeslib
 	   DecisionFunction(std::shared_ptr<Factor> f, VarId decisionNode);
 
 
-      bool GetDecision(InstanceId);
+      VarState GetDecision(InstanceId);
 
       // from UIElem
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
       virtual std::string GetType() const override;
 
       protected:
@@ -719,7 +858,7 @@ namespace bayeslib
       }
 
       // from UIElem
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
       virtual std::string GetType() const override ;
 
       /// Get Avaialble decisions given input sample
@@ -838,7 +977,7 @@ namespace bayeslib
       /// Get string Json representations of this FactorSet
       /// @param db VarDb database containing domain Variables
       /// @return string containing Json representation of this FactorSet
-      virtual std::string GetJson(VarDb &db) const override;
+      virtual std::string GetJson(const VarDb &db) const override;
 
       /// Returns "FactorSet"
       virtual std::string GetType() const override;
@@ -846,7 +985,7 @@ namespace bayeslib
       int GetDebugLevel() { return mDebugLevel; };
       void SetDebugLevel(int n) { mDebugLevel = n; }
 
-
+      const VarDb & GetDb() const { return mDb; }
 
    protected:
       ListFactors mFactors;

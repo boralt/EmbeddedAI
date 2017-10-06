@@ -33,8 +33,6 @@ SessionEntry::RunCommand(std::string sOp)
 
    VarDb *pVarDb= 0;
    FactorSet *pFs = 0;
-   VarSet opVarSet;
-   Clause opClause;
    std::string op;
 
    if (v.isMember("VarDb"))
@@ -46,6 +44,9 @@ SessionEntry::RunCommand(std::string sOp)
    {
       return createErrorJson("No Vars");
    }
+
+   VarSet opVarSet(*pVarDb);
+   Clause opClause(*pVarDb);
 
 
    for (Json::Value::iterator it = v.begin();

@@ -10,7 +10,7 @@
 
 #include "factor.h"
 #include "json/json.h"
-
+#include <limits>
 using namespace bayeslib;
 
 char *
@@ -18,7 +18,7 @@ dumpbinary(char *sz, size_t lenSz, InstanceId v, int sizeVarSet)
 {
    InstanceId mask = 1;
    size_t i =0;
-   for (i = 0; i < sizeVarSet && i < (lenSz-1); i++, mask <<=1)
+   for (i = 0; i < (size_t) sizeVarSet && i < (lenSz-1); i++, mask <<=1)
    {
       if (v & mask)
          sz[i] = '1';
@@ -34,8 +34,10 @@ Factor::Init()
 {
 	mFactorType = VarType_Normal;
 
-    mFactorSize = 1 << mSet.GetSize();
+    mFactorSize = mSet.GetInstances();
     int index= 0;
+
+    // B.A. replace mVarToIndex with mSet.GetOffset()
     for(VarId id=mSet.GetFirst(); id != 0; id = mSet.GetNext(id))
     {        
         mBsPresent.set(id);
@@ -47,29 +49,29 @@ Factor::Init()
 }
 
 Factor::Factor(const VarSet &vset) : 
-    mSet(vset)
+    mSet(vset), mClauseHead(vset.GetDb()), mExtendedVarSet(vset.GetDb())
 {
     Init();
 }
 
 Factor::Factor(const VarSet &vset, VarId clauseHead) : 
-    mSet(vset)
+    mSet(vset), mClauseHead(vset.GetDb(), {clauseHead}), mExtendedVarSet(vset.GetDb())
 {
-    Init();
     mClauseHead.Add(clauseHead);
+    Init();
 }
 
 
 
 Factor::Factor(const VarSet &vset, VarSet clauseHead) : 
-    mSet(vset), mClauseHead(clauseHead)
+    mSet(vset), mClauseHead(clauseHead), mExtendedVarSet(vset.GetDb())
 {
     Init();
 }
 
 
-Factor::Factor(std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead) :
-	mSet(varset), mClauseHead(clauseHead)
+Factor::Factor(const VarDb &db, std::initializer_list<VarId> varset, std::initializer_list<VarId> clauseHead) :
+	mSet(db, varset), mClauseHead(db, clauseHead), mExtendedVarSet(db)
 {
    Init();
 }
@@ -92,7 +94,7 @@ void Factor::CompleteProbabilities()
 		Clause cHead(mClauseHead);
 		ValueType v = 0.;
 		bool bUpdateClauseFound = false;    // found unidentified member in the sequence
-		Clause cFullUpdateClause;
+		Clause cFullUpdateClause(mSet);
 		do
 		{
 			Clause tryClause = Clause::Append(mSet, cHead, cTail);
@@ -113,7 +115,7 @@ void Factor::CompleteProbabilities()
 
 		if (v < 1.0 && bUpdateClauseFound)
 		{
-			v = 1.0 - v;
+			v = 1.0F - v;
 			AddInstance(cFullUpdateClause.GetInstanceId(), v);
 		}
 
@@ -174,14 +176,16 @@ Factor::Merge(std::shared_ptr<Factor> f)
         {
             int nOffs1 = h.MapOffsRTo1(n);
             int nOffs2 = h.MapOffsRTo2(n);
-            bool bSetInRes = ((i & (1ULL << n)) != 0);
-            
-            if(bSetInRes && nOffs1 >=0)
-                id1 |= (1ULL << nOffs1);
 
-            if(bSetInRes && nOffs2 >=0)
-                id2 |= (1ULL << nOffs2);
+            VarState valInRes = h.mVr.FetchVarStateByOffs(n, i);
+            
+            if(nOffs1 >=0)
+                id1 +=  h.mV1.GetInstanceComponentByOffs(nOffs1, valInRes);
+
+            if(nOffs2 >=0)
+                id2 +=  h.mV2.GetInstanceComponentByOffs(nOffs2, valInRes);
         }
+
         ValueType v = Get(id1) * f->Get(id2);
         res->AddInstance(i, v);
         Clause newExtendedClause(newExtendedVs);
@@ -214,34 +218,33 @@ Factor::EliminateVar(VarId id)
         return shared_from_this();
     }
 
-    VarSet vsEliminate;
+    VarSet vsEliminate(mSet.GetDb());
     vsEliminate.Add(id);
 
-    VarSet vsResTail = mSet.Substract(vsEliminate);
+    VarSet vsRes = mSet.Substract(vsEliminate);
     VarSet vsResHead = mClauseHead.Substract(vsEliminate);
-   
 
-    //for( VarId resId = mSet.GetFirst(); resId != 0; resId = mSet.GetNext(resId))
-    //{
-    //    // not eliminated var 
-    //    if (resId != id)
-    //        vsRes.Add(resId);
-    //}
+    std::shared_ptr<Factor> res(new Factor(vsRes, vsResHead));
 
-    std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
-    InstanceId nEliminateBit = 1ULL << mVarToIndex[id];
-    InstanceId nRightPart = nEliminateBit - 1;
-    InstanceId nShiftMask  = ~(nRightPart | nEliminateBit);
 
-    for(InstanceId nLoop=0; nLoop < vsResTail.GetInstances(); nLoop++)
-    {
-        // translate new factor instance into original instances
-        InstanceId nOrigInstance0 = ((nLoop << 1) & nShiftMask) | (nLoop & nRightPart) ;
-        InstanceId nOrigInstance1 = nOrigInstance0 | nEliminateBit ;
-            
-        ValueType val = mValues[nOrigInstance0] + mValues[nOrigInstance1];
-        res->AddInstance(nLoop, val);
-    }
+    InstanceId rightMultiplier = 0;
+    int eliminateSize = 0;
+    mSet.GetVarParams(id, rightMultiplier, eliminateSize);
+    InstanceId leftMultiplier = rightMultiplier*eliminateSize;
+
+   for(InstanceId nLoop=0; nLoop < vsRes.GetInstances(); nLoop++)
+   {
+      // calc base part of InstanceId in old VarSet
+      InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
+      ValueType valSum = 0;
+
+      for(VarState elimState=0; elimState < eliminateSize; ++elimState)
+      {
+         InstanceId oldInstance = oldInstanceBase + elimState*rightMultiplier;
+         valSum += mValues[oldInstance];
+      }
+      res->AddInstance(nLoop, valSum);
+   }
     return res;
 }
 
@@ -258,9 +261,9 @@ Factor::EliminateVar(const VarSet &ids)
 
 
 std::shared_ptr<Factor> 
-Factor::PruneEdge(VarId v, bool val)
+Factor::PruneEdge(VarId v, VarState val)
 {
-   VarSet newVs = mSet.Substract(v);
+	VarSet newVs = mSet.Substract({GetDb(), v });
    std::shared_ptr<Factor> res = std::make_shared<Factor>(newVs);
    Clause clNew(newVs);
    Clause clOld(mSet);
@@ -282,6 +285,7 @@ Factor::PruneEdge(VarId v, bool val)
 std::shared_ptr<Factor> 
 Factor::ApplyClause(const Clause &c)
 {
+
     // varset for new Factor
     VarSet vsNew = mSet.Substract(c.GetVarSet());
     VarSet vsHeadNew = mClauseHead.Substract(c.GetVarSet());
@@ -312,16 +316,16 @@ Factor::Normalize()
    do
    {
       Clause cTail(vsTail);
-      ValueType v = 0.;
+      ValueType v = 0.f;
       do
       {
          Clause res = Clause::Append(mSet, cHead, cTail);
          v += Get(res.GetInstanceId());
       } while (!cTail.Incr());
 
-      if (v == 0.)
-         v = 1.;
-      
+      if (v == 0.f)
+         v = 1.f;
+      // start loop over tail vars again, this time normalizing results
       do
       {
          Clause res = Clause::Append(mSet, cHead, cTail);
@@ -337,56 +341,55 @@ Factor::MaximizeVar(VarId id)
 {
    if (!mBsPresent[id])
    {
+      // B.A. consider creating new factor
       // variable is not present
       return shared_from_this();
    }
 
-   VarSet vsEliminate;
+   VarSet vsEliminate(mSet.GetDb());
    vsEliminate.Add(id);
 
-   VarSet vsResTail = mSet.Substract(vsEliminate);
+   // content of new varset
+   VarSet vsRes = mSet.Substract(vsEliminate);
    VarSet vsResHead = mClauseHead.Substract(vsEliminate);
 
+   std::shared_ptr<Factor> res(new Factor(vsRes, vsResHead));
 
-   //for( VarId resId = mSet.GetFirst(); resId != 0; resId = mSet.GetNext(resId))
-   //{
-   //    // not eliminated var 
-   //    if (resId != id)
-   //        vsRes.Add(resId);
-   //}
-
-   std::shared_ptr<Factor> res(new Factor(vsResTail, vsResHead));
-   InstanceId nEliminateBit = 1ULL << mVarToIndex[id];
-   InstanceId nRightPart = nEliminateBit - 1;
-   InstanceId nShiftMask = ~(nRightPart | nEliminateBit);
+   InstanceId rightMultiplier = 0;
+   int eliminateSize = 0;
+   mSet.GetVarParams(id, rightMultiplier, eliminateSize);
+   InstanceId leftMultiplier = rightMultiplier*eliminateSize;
 
    VarSet newExtendedVs = mExtendedVarSet;
    newExtendedVs.Add(id);
    res->SetExtendedVarSet(newExtendedVs);
 
-   for (InstanceId nLoop = 0; nLoop < vsResTail.GetInstances(); nLoop++)
+
+   for(InstanceId nLoop=0; nLoop < vsRes.GetInstances(); nLoop++)
    {
-      // translate new factor instance into original instances
-      InstanceId nOrigInstance0 = ((nLoop << 1) & nShiftMask) | (nLoop & nRightPart);
-      InstanceId nOrigInstance1 = nOrigInstance0 | nEliminateBit;
+      // calc base part of InstanceId in old VarSet
+      InstanceId oldInstanceBase = nLoop%rightMultiplier + (nLoop/rightMultiplier)*leftMultiplier;
+      ValueType valMax = -std::numeric_limits<float>::max();
+      
+      VarState varStateMax = 0;
+      InstanceId oldInstanceMax = 0;
 
-      ValueType val = 0.;
-
-      if (mValues[nOrigInstance0] > mValues[nOrigInstance1])
+      for(VarState elimState=0; elimState < eliminateSize; ++elimState)
       {
-         res->AddInstance(nLoop, mValues[nOrigInstance0]);
-         Clause cl(newExtendedVs, GetExtendedClause(nOrigInstance0));
-         cl.SetVar(id, false);
-         res->AddExtendedClause(nLoop, cl.GetInstanceId());
+         InstanceId oldInstance = oldInstanceBase + elimState*rightMultiplier;
+         if(valMax <= mValues[oldInstance])
+         {
+            valMax = mValues[oldInstance];
+            varStateMax = elimState;
+            oldInstanceMax = oldInstance;
+         }
       }
-      else
-      {
-         res->AddInstance(nLoop, mValues[nOrigInstance1]);
-         Clause cl(newExtendedVs, GetExtendedClause(nOrigInstance1));
-         cl.SetVar(id, true);
-         res->AddExtendedClause(nLoop, cl.GetInstanceId());
-      }
+      res->AddInstance(nLoop, valMax);
+      Clause cl(newExtendedVs, GetExtendedClause(oldInstanceMax));
+      cl.SetVar(id, varStateMax);
+      res->AddExtendedClause(nLoop, cl.GetInstanceId());
    }
+
    return res;
 }
 
@@ -411,13 +414,13 @@ void
 Factor::EraseExtendedInfo()
 {
    mExtendedClauseVector.clear();
-   mExtendedVarSet = VarSet();
+   mExtendedVarSet = VarSet(GetDb());
 }
 
 
 
 std::string 
-Factor::GetJson(VarDb &db) const
+Factor::GetJson(const VarDb &db) const
 {
    std::string s;
    s = "{varset:";

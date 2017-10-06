@@ -16,7 +16,7 @@ using namespace bayeslib;
 VarSet
 VarSetFactory::Create(VarDb &db, Json::Value &v)
 {
-   VarSet res;
+   VarSet res(db);
    for (Json::Value::iterator it = v.begin();
       it != v.end(); ++it)
    {
