@@ -525,3 +525,593 @@ int LargeTest2()
 
    return 0;
 }
+
+
+static float
+CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
+{
+
+   float passl = 1.;
+   for(auto iter = cj.begin(); iter !=cj.end(); ++iter)
+   {
+      int cjLevel = *iter;
+      // calculate packet drop based on congestion;
+      switch(cjLevel)
+      {
+      case 0:   // no congesion
+         passl *= 0.99;
+         break;
+      case 1:   // low congestion   
+         passl *= 0.96;
+         break;
+      case 2:   // high congestion
+         passl *=0.8;
+         break;
+      case 3:   // full drop
+         passl = 0.6;
+      }
+   }
+
+   // drop per 100 samples
+   int nDropRate = 100-100*passl;
+   int nDropDetectedMin = 0;
+   int nDropDetectedMax = 1;
+   
+   switch(dropLevel)
+   {
+   case 0:  // no drop
+
+      nDropDetectedMin = 0;
+      nDropDetectedMax = 0;
+      break;
+
+   case 1:  // drop 1
+      nDropDetectedMin = 1;
+      nDropDetectedMax = 1;
+      break;
+
+   case 2:  // drop 2
+      nDropDetectedMin = 2;
+      nDropDetectedMax = 2;
+      break;
+
+   case 3: // drop 3
+      nDropDetectedMin = 3;
+      nDropDetectedMax = 3;
+      break;
+
+   case 4: // drop 4
+      nDropDetectedMin = 4;
+      nDropDetectedMax = 4;
+      break;
+
+   case 5: // drop 5
+      nDropDetectedMin = 5;
+      nDropDetectedMax = 5;
+      break;
+
+   case 6: // drop 10
+      nDropDetectedMin = 6;
+      nDropDetectedMax = 10;
+      break;
+
+   case 7: // drop 20
+      nDropDetectedMin = 11;
+      nDropDetectedMax = 20;
+      break;
+
+   case 8: // drop  40
+      nDropDetectedMin = 21;
+      nDropDetectedMax = 40;
+      break;
+
+   case 9: // drop 100
+      nDropDetectedMin = 41;
+      nDropDetectedMax = 100;
+      break;
+
+   }
+
+   // will use poisson multiplication
+   auto poisson = [](int k, int lambda) -> float {
+      double res=exp(-lambda);
+      
+      for(int i = 1; i <= k; i++)
+      {
+         res *= ((double) lambda /(double) i) ;
+      }
+      return (float) res;
+   };
+   
+   float prob = 0;
+   for(int drop = nDropDetectedMin; drop <= nDropDetectedMax; drop++)
+   {
+      prob += poisson(drop, nDropRate);
+   }
+   
+   return prob;
+}
+
+
+
+/** calculate Aggregated Droplevel probability which accounts for 3 previous intervals 
+    @param dropLevel drop level for which probalility is calculated 0-4
+    @param  cj[3]  conjestion levels of the components of  the network path 
+    @return drop level probability
+ */    
+
+static float
+CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
+{
+   float passLevel = 1.;
+   for(auto iter = cj.begin(); iter != cj.end(); ++iter)
+   {
+      int cjLevel = *iter;
+      // calculate packet drop based on congestion;
+      switch(cjLevel)
+      {
+      case 0:   // no congesion
+         passLevel *= 0.99;
+         break;
+      case 1:   // low congestion   
+         passLevel *= 0.96;
+         break;
+      case 2:   // high congestion
+         passLevel *=0.8;
+         break;
+      case 3:   // full drop
+         passLevel = 0.6;
+         break;
+      }
+   }
+
+   // drop per 100 samples
+   int nDropRate = 300-300*passLevel;
+   int nDropDetectedMin = 0;
+   int nDropDetectedMax = 1;
+
+   switch (dropLevel)
+   {
+   case 0:  // no drop
+
+      nDropDetectedMin = 0;
+      nDropDetectedMax = 2;
+      break;
+
+   case 1:  // drop 1
+      nDropDetectedMin = 3;
+      nDropDetectedMax = 5;
+      break;
+
+   case 2:  // drop 2
+      nDropDetectedMin = 6;
+      nDropDetectedMax = 8;
+      break;
+
+   case 3: // drop 3
+      nDropDetectedMin = 9;
+      nDropDetectedMax = 11;
+      break;
+
+   case 4: // drop 4
+      nDropDetectedMin = 12;
+      nDropDetectedMax = 14;
+      break;
+
+   case 5: // drop 5
+      nDropDetectedMin = 15;
+      nDropDetectedMax = 17;
+      break;
+
+   case 6: // drop 10
+      nDropDetectedMin = 18;
+      nDropDetectedMax = 30;
+      break;
+
+   case 7: // drop 20
+      nDropDetectedMin = 31;
+      nDropDetectedMax = 60;
+      break;
+
+   case 8: // drop  40
+      nDropDetectedMin = 61;
+      nDropDetectedMax = 120;
+      break;
+
+   case 9: // drop 100
+      nDropDetectedMin = 121;
+      nDropDetectedMax = 300;
+      break;
+
+   }
+
+
+   // will use poisson multiplication
+   auto poisson = [](int k, int lambda) -> float {
+      double res=exp(-lambda);
+      
+      for(int i = 1; i <= k; i++)
+      {
+         res *= ((double) lambda /(double) i) ;
+      }
+      return (float) res;
+   };
+   
+   float prob = 0;
+   for(int drop = nDropDetectedMin; drop <= nDropDetectedMax; drop++)
+   {
+      prob += poisson(drop, nDropRate);
+   }
+   
+   return prob;
+}
+
+
+/**  Create Model of Carrier Network
+     packet drops are measured for each sublink
+     The system can sample instantenues and accumulated rate of packet drop
+     digitized into two regions -- hi drop and low drop
+     /// \image html "../../docs/netgraph.png" width=60%
+*/
+
+int InitLargeTest3(VarDb &db, FactorSet &fs)
+{
+
+   char sz[10];
+
+   db.AddVar("cjE", {"none", "1", "2", "full"});
+
+
+   // 4 links links with 2 sublinks each
+   for (int nLink = 1; nLink <= 4; nLink++)
+   {
+      // conjested link
+
+      snprintf(sz, 10, "cj%d", nLink);
+      // no congestion, low, high, full drop
+      db.AddVar(sz, {"none", "1", "2", "full"});
+
+      // conjested sublink
+      snprintf(sz, 10, "cj%d_1", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      snprintf(sz, 10, "cj%d_2", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      // packet drops
+      auto dropDomain = { "none", "1", "2", "3", "4", "5", "10", "20","40",  "100" };
+
+      // drop sublink1
+      snprintf(sz, 10, "dr%d_1", nLink);
+      db.AddVar(sz, dropDomain);
+
+      // drop sublink 2
+      snprintf(sz, 10, "dr%d_2", nLink);
+      db.AddVar(sz, dropDomain);
+
+
+      // acc drop sublink1
+      snprintf(sz, 10, "dra%d_1", nLink);
+      db.AddVar(sz, dropDomain);
+
+      // acc drop sublink 2
+      snprintf(sz, 10, "dra%d_2", nLink);
+      db.AddVar(sz, dropDomain);
+
+   }
+   // conjested endpoint
+   db.AddVar("cjE", {"none", "1", "2", "full"});
+
+   for (int nLink = 1; nLink <= 3; nLink++)
+   {
+      // toplevel varaibles.
+      VarSet vsConj(db);
+      // conjested link
+      snprintf(sz, 10, "cj%d", nLink);
+      vsConj << db[sz];
+      std::shared_ptr<Factor> fConj = std::make_shared<Factor>(vsConj, db[sz]);
+      *fConj << 0.95F << 0.03F << 0.01F << 0.01F;
+
+
+      VarSet vsConjSL1(db);
+      // conjested sub link 1
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsConjSL1 << db[sz];
+      std::shared_ptr<Factor> fConjSL1 = std::make_shared<Factor>(vsConjSL1, db[sz]);
+      *fConjSL1 << 0.95F << 0.03F << 0.01F << 0.01F;
+
+      VarSet vsConjSL2(db);
+      // conjested sub link 2
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsConjSL2 << db[sz];
+      std::shared_ptr<Factor> fConjSL2 = std::make_shared<Factor>(vsConjSL2, db[sz]);
+      *fConjSL2 << 0.95F << 0.03F << 0.01F << 0.01F;
+
+      // second level variables
+
+      VarSet vsDrop1(db);
+      //  drop link 1
+      VarId headVar;
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDrop1 << db[sz];
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsDrop1 << db[sz];
+      vsDrop1 << db["cjE"];
+      snprintf(sz, 10, "dr%d_1", nLink);
+      headVar = db[sz];
+      vsDrop1 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDrop1 = std::make_shared<Factor>(vsDrop1, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDrop1(fDrop1);
+
+      // flDrop1 << CalcDropProbability();
+
+      // variables parent variables of drop node
+      int cjLink, cjSublink, cjEndpoint;
+      int dropLevel;  // values of leaf variable
+
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDrop1 << CalcDropLevelProbability(dropLevel, { cjEndpoint, cjSublink, cjLink });
+               }
+
+            }
+
+         }
+      }
+
+      // same for sublink 2 on link nLink
+      VarSet vsDrop2(db);
+      // low drop link 2
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDrop2 << db[sz];
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsDrop2 << db[sz];
+      vsDrop2 << db["cjE"];
+      snprintf(sz, 10, "dr%d_2", nLink);
+      headVar = db[sz];
+      vsDrop2 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDrop2 = std::make_shared<Factor>(vsDrop2, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDrop2(fDrop2);
+
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDrop2 << CalcDropLevelProbability(dropLevel, { cjEndpoint, cjSublink, cjLink });
+               }
+
+            }
+         }
+      }
+
+      ////////////////////////////////////////////////////
+      // ACCUMULATED drop VARS
+
+      VarSet vsDropA1(db);
+      // accumulated drop sublink link 1
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDropA1 << db[sz];
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsDropA1 << db[sz];
+      vsDropA1 << db["cjE"];
+      snprintf(sz, 10, "dra%d_1", nLink);
+      headVar = db[sz];
+      vsDropA1 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDropA1 = std::make_shared<Factor>(vsDropA1, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDropA1(fDropA1);
+
+      // evaluate 3 previous intervals drop level
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDropA1 << CalcAggrDropLevelProbability(dropLevel, { cjEndpoint, cjSublink, cjLink });
+               }
+
+            }
+         }
+      }
+      
+      /////
+
+      VarSet vsDropA2(db);
+      // low drop link 2
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDropA2 << db[sz];
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsDropA2 << db[sz];
+      vsDropA2 << db["cjE"];
+      snprintf(sz, 10, "dra%d_2", nLink);
+      headVar = db[sz];
+      vsDropA2 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDropA2 = std::make_shared<Factor>(vsDropA2, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDropA2(fDropA2);
+
+      // evaluate 3 previous intervals drop level
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDropA2 << CalcAggrDropLevelProbability(dropLevel, { cjEndpoint, cjSublink, cjLink });
+               }
+
+            }
+
+         }
+      }
+
+      // add all Factors to the factorset
+      fs.AddFactor(fConj);
+      fs.AddFactor(fConjSL1);
+      fs.AddFactor(fConjSL2);
+      fs.AddFactor(fDrop1);
+      fs.AddFactor(fDrop2);
+      fs.AddFactor(fDropA1);
+      fs.AddFactor(fDropA2);
+   }
+
+   VarSet vsConjE(db);
+   // conjested link
+   vsConjE << db["cjE"];
+
+   std::shared_ptr<Factor> fConjE = std::make_shared<Factor>(vsConjE, db["cjE"]);
+   fConjE->AddInstance(0, 0.98F);
+   fConjE->AddInstance(1, 0.01F);
+   fConjE->AddInstance(1, 0.007F);
+   fConjE->AddInstance(1, 0.003F);
+   fs.AddFactor(fConjE);
+
+   return 0;
+}
+
+
+int LargeTest3()
+{
+   VarDb db;
+   FactorSet fs(db);
+   InitLargeTest3(db, fs);
+
+   std::string s = fs.GetJson(db);
+ 
+
+   printf("\n===Large test3  with edge Pruning===\n%s\n", s.c_str());
+
+ 
+   VarSet vsSample(db), vsSolve(db);
+
+//   vsSolve << db["cj1_1"];
+//   vsSolve << db["cj1_2"];
+//   vsSolve << db["cj1"];
+
+
+   vsSolve << db["cj1_1"] << db["cj1_2"] << db["cj1"];
+   vsSolve << db["cj2_1"] << db["cj2_2"] << db["cj2"];
+   vsSolve << db["cj3_1"] << db["cj3_2"] << db["cj3"];
+   vsSolve << db["cj4_1"] << db["cj4_2"] << db["cj4"];
+   vsSolve << db["cjE"];
+
+   VarSet varDbSet = db.GetVarSet();
+
+   vsSample = db.GetVarSet().Substract(vsSolve);
+
+   s = vsSample.GetJson(db);
+   printf("\n   == Test Sample Varset ==\n%s\n", s.c_str());
+
+   Clause cSample(vsSample);
+
+   cSample.AddVar(db["dr1_1"], 0);
+
+   cSample.AddVar(db["dr1_2"], 5);
+
+   cSample.AddVar(db["dra1_1"], 0);
+   cSample.AddVar(db["dra1_2"], 5);
+   cSample.AddVar(db["dr2_1"], 0);
+   cSample.AddVar(db["dr2_2"], 9);
+   cSample.AddVar(db["dra2_1"], 0);
+   cSample.AddVar(db["dra2_2"], 9);  // 
+   cSample.AddVar(db["dr3_1"], 0);
+   cSample.AddVar(db["dr3_2"], 0);
+   cSample.AddVar(db["dra3_1"], 0);
+   cSample.AddVar(db["dra3_2"], 0);
+
+
+   s = cSample.GetJson(db);
+   printf("\n   == Test Sample Clause ==\n%s\n", s.c_str());
+
+   fs.PruneEdges(cSample);
+   // s = fs.GetJson();
+   // printf("\n =After Prune Edges =\n%s\n", s.c_str());
+
+
+   //printf("\n== Sample = %s\n", cSample.GetJson().c_str());
+   fs.ApplyClause(cSample);
+   //s = fs.GetJson(db);
+   //printf("\n =After apply =\n%s\n", s.c_str());
+
+   s = varDbSet.GetJson(db);
+   printf("\n==== Initial VS%s", s.c_str());
+
+
+   InteractionGraph ig(&fs);
+   VarSet optVs = ig.GetElimOrder();
+   s = optVs.GetJson(db);
+   printf("\n==== Updated VS%s", s.c_str());
+
+   fs.MaximizeVar(optVs);
+
+
+   s = fs.GetJson(db);
+   printf("\n =After MAX up =\n%s\n", s.c_str());
+
+
+   std::shared_ptr<Factor> res1 = fs.Merge();
+   s = res1->GetJson(db);
+   printf("\n==After MPE calculation ==\n%s\n", s.c_str());
+
+   VarSet vsMpe = res1->GetExtendedVarSet();
+   InstanceId instanceMpe = res1->GetExtendedClause(0);
+   Clause clMpe(vsMpe, instanceMpe);
+   s = clMpe.GetJson(db);
+   printf("==MPE clause ==\n%s\n", s.c_str());
+
+   int nFound = 0;
+   for (VarId vid = vsMpe.GetFirst(); vid != 0; vid = vsMpe.GetNext(vid))
+   {
+      if (!vsSolve.HasVar(vid))
+      {
+         continue;
+      }
+      
+
+      if (vid == db["cj2_2"])
+      {
+         EXPECT_EQ(clMpe[vid], 3);
+         nFound++;
+      }
+      else if (vid == db["cj1_2"])
+      {
+         EXPECT_EQ(clMpe[vid], 1);
+         nFound++;
+      }
+      else
+      {
+         EXPECT_EQ(clMpe[vid],0);
+      }
+   }
+
+   EXPECT_EQ(nFound, 2);
+
+
+   return 0;
+}
+
