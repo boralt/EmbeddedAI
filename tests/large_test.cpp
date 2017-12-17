@@ -525,3 +525,363 @@ int LargeTest2()
 
    return 0;
 }
+
+
+#if 0
+float CalcDropProbability(VarState dropState, VarState stage1, ValState stage2, ValState stage3 )
+{
+   float fPassRate = 1.0F;
+   VarState ar[] = {stage1, stage2, stage3};
+
+   for (auto st: ar)
+   {
+      switch(st)
+      {
+         case 0: fPassRate *= 0.995; break;
+         case 1: fPassRate *= 0.95; break;
+         case 2: fPassRate *= 0.8; break;
+         case 3: fPassRate = 0; break;
+         default: break;
+      }
+   }
+
+   float expectedPassHi = 1.0F;
+   float expectedPassLo = 1.0F;
+
+   switch(dropState)
+   {
+      case 0:   // expected pass rate is 0.98 - 1.0
+
+         expectedPassHi = 1.0F;
+         expectedPassLo = 0.98F;
+         break;
+
+      case 1:  // expected pass rate 0.8 - 0.98
+         expectedPassHi = 0.8F;
+         expectedPassLo = 0.90F;
+         break;
+
+      case 2: // expected pass rate 0.01 - 0.8
+         expectedPassHi = 0.8F;
+         expectedPassLo = 0.01F;
+         break;
+
+      case 3:
+         expectedPassHi = 0.F;
+         expectedPassLo = 0.0F;
+         break;
+   }
+
+   float fRes1 = expectedPassHi - fPassRate ;
+   float fRes2 = fPassRate - expectedPassLo;
+
+   return 1;
+
+}
+#endif
+
+
+/** calculate Droplevel probability 
+    @param dropLevel drop level for which probalility is calculated 0-4
+    @param  cj[3]  conjestion levels of the components of  the network path 
+    @return drop level probability
+ */    
+
+static float
+CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
+{
+   float passLevel = 1.;
+   for(auto iter : cj)
+   {
+      cjLevel = *iter;
+      // calculate packet drop based on congestion;
+      switch(cjLevel)
+      {
+      case 0:   // no congesion
+         passl *= 0.99;
+         break;
+      case 1:   // low congestion   
+         passl *= 0.95;
+         break;
+      case 2:   // high congestion
+         passl *=0.8;
+         break;
+      case 3:   // full drop
+         passl = 0;
+      }
+   }
+
+   // drop per 100 samples
+   int nDropRate = 100-100*passl;
+   int nDropDetectedMin = 0;
+   int nDropDetectedMax = 1;
+   
+   switch(dropLevel)
+   {
+   case 0:  // no drop
+
+      dropDetectedMin = 0;
+      dropDetectedMax = 2;
+      break;
+
+   case 1:  // low drop
+      dropDetectedMin = 3;
+      dropDetectedMax = 8;
+      break;
+
+   case 2:  // highdrop
+      dropDetectedMin = 8;
+      dropDetectedMax = 20;
+      break;
+
+      case 3:
+      dropDetectedMin = 21;
+      dropDetectedMax = 100;
+      break;
+   }
+
+   // will use poisson multiplication
+   auto poisson = [](int k, int lambda) -> float {
+      float res=exp(-lambda);
+      
+      for(int i = 1; i <= k; i++)
+      {
+         res *= (lambda /i) ;
+      }
+      return res;
+   }
+   
+   float prob = 0;
+   for(int drop = dropDetectedMin; drop <= dropDetectedMax; drop++)
+   {
+      prob += poisson(drop, nDropRate);
+   }
+   
+   return prob;
+}
+
+
+/**  Create Model of Carrier Network
+     packet drops are measured for each sublink
+     The system can sample instantenues and accumulated rate of packet drop
+     digitized into two regions -- hi drop and low drop
+     /// \image html "../../docs/netgraph.png" width=60%
+*/
+
+int InitLargeTest2(VarDb &db, FactorSet &fs)
+{
+   char sz[10];
+
+   // 4 links links with 2 sublinks each
+   for (int nLink = 1; nLink <= 3; nLink++)
+   {
+      // conjested link
+
+      snprintf(sz, 10, "cj%d", nLink);
+      // no congestion, low, high, full drop
+      db.AddVar(sz, {"none", "1", "2", "full"});
+
+      // conjested sublink
+      snprintf(sz, 10, "cj%d_1", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      snprintf(sz, 10, "cj%d_2", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      // packet drops
+
+      // drop sublink1
+      snprintf(sz, 10, "dr%d_1", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      // drop sublink 2
+      snprintf(sz, 10, "dr%d_2", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+
+      // acc drop sublink1
+      snprintf(sz, 10, "dra%d_1", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+      // acc drop sublink 2
+      snprintf(sz, 10, "dra%d_2", nLink);
+      db.AddVar(sz,{"none", "1", "2", "full"});
+
+   }
+   // conjested endpoint
+   db.AddVar("cjE", {"none", "1", "2", "full"});
+
+   for (int nLink = 1; nLink <= 3; nLink++)
+   {
+      // toplevel varaibles.
+      VarSet vsConj(db);
+      // conjested link
+      snprintf(sz, 10, "cj%d", nLink);
+      vsConj << db[sz];
+      std::shared_ptr<Factor> fConj = std::make_shared<Factor>(vsConj, db[sz]);
+      *fConj << 0.95F << 0.03F << 0.01F << 0.01F;
+
+
+      VarSet vsConjSL1(db);
+      // conjested sub link 1
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsConjSL1 << db[sz];
+      std::shared_ptr<Factor> fConjSL1 = std::make_shared<Factor>(vsConjSL1, db[sz]);
+      *fConjSL1 << 0.95F << 0.03F << 0.01F << 0.01F;
+
+      VarSet vsConjSL2(db);
+      // conjested sub link 2
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsConjSL2 << db[sz];
+      std::shared_ptr<Factor> fConjSL2 = std::make_shared<Factor>(vsConjSL2, db[sz]);
+      *fConjSL1 << 0.95F << 0.03F << 0.01F << 0.01F;
+
+      // second level variables
+
+      VarSet vsDrop1(db);
+      //  drop link 1
+      VarId headVar;
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDrop1 << db[sz];
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsDrop1 << db[sz];
+      vsDrop1 << db["cjE"];
+      snprintf(sz, 10, "dr%d_1", nLink);
+      headVar = db[sz];
+      vsDrop1 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDrop1 = std::make_shared<Factor>(vsDrop1, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDrop1(fDrop1);
+
+      // flDrop1 << CalcDropProbability();
+
+      // variables parent variables of drop node
+      int cjLink, cjSublink, cjEndpoint;
+      int dropLevel;  // values of leaf variable
+
+      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDrop1 <<  CalcDropLevelProbability(dropLevel, cjEndpoint, cjSublink, cjLink);
+               }
+
+            }
+
+         }
+      }
+
+      // same for sublink 2 on link nLink
+      VarSet vsDrop2(db);
+      // low drop link 2
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDrop2 << db[sz];
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsDrop2 << db[sz];
+      vsDrop2 << db["cjE"];
+      snprintf(sz, 10, "dr%d_2", nLink);
+      headVar = db[sz];
+      vsDrop2 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDrop2 = std::make_shared<Factor>(vsDrop2, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDrop2(fDrop2);
+
+      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      {
+         for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
+         {
+            for(cjSublink = 0; cjSublink < 4; cjSublink++)
+            {
+               for(cjLink = 0; cjLink < 4; cjLink++)
+               {
+                  flDrop2 <<  CalcDropLevelProbability(dropLevel, cjEndpoint, cjSublink, cjLink);
+               }
+
+            }
+
+         }
+      }
+
+
+      ////////////////////////////////////////////////////
+      // ACCUMULATED drop VARS
+
+      VarSet vsDropA1(db);
+      // accumulated drop sublink link 1
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDropA1 << db[sz];
+      snprintf(sz, 10, "cj%d_1", nLink);
+      vsDropA1 << db[sz];
+      vsDropA1 << db["cjE"];
+      snprintf(sz, 10, "dra%d_1", nLink);
+      headVar = db[sz];
+      vsDropA1 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDropA1 = std::make_shared<Factor>(vsDropA1, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDropLoA1(fDropLoA1);
+
+      
+      
+      
+      /////
+
+      VarSet vsDropA2(db);
+      // low drop link 2
+      snprintf(sz, 10, "cj%d", nLink);
+      vsDropA2 << db[sz];
+      snprintf(sz, 10, "cj%d_2", nLink);
+      vsDropA2 << db[sz];
+      vsDropA2 << db["cjE"];
+      snprintf(sz, 10, "dra%d_2", nLink);
+      headVar = db[sz];
+      vsDropA2 << headVar;
+
+      // construct factor
+      std::shared_ptr<Factor> fDropA2 = std::make_shared<Factor>(vsDropA2, headVar);
+      // load factor using factor loader
+      Factor::FactorLoader flDropA2(fDropA2);
+      flDropLoA2 << 0.95F << 0.5F << 0.1F << 0.0F;
+      flDropLoA2 << 0.5F << 0.4F << 0.08F << 0.0F;
+      flDropLoA2 << 0.08F << 0.07F << 0.05F << 0.0F;
+      flDropLoA2 << 0.0F << 0.0F << 0.0F << 0.0F;
+
+
+
+
+      // add all Factors to the factorset
+      fs.AddFactor(fConjL);
+      fs.AddFactor(fConjSL1);
+      fs.AddFactor(fConjSL2);
+      fs.AddFactor(fDropLo1);
+      fs.AddFactor(fDropLo2);
+      fs.AddFactor(fDropHi1);
+      fs.AddFactor(fDropHi2);
+      fs.AddFactor(fDropLoA1);
+      fs.AddFactor(fDropLoA2);
+      fs.AddFactor(fDropHiA1);
+      fs.AddFactor(fDropHiA2);
+   }
+
+   VarSet vsConjE(db);
+   // conjested link
+   vsConjE << db["cjE"];
+   std::shared_ptr<Factor> fConjE = std::make_shared<Factor>(vsConjE, db["cjE"]);
+   fConjE->AddInstance(0, 0.92F);
+   fConjE->AddInstance(1, 0.08F);
+   fs.AddFactor(fConjE);
+
+
+   return 0;
+}
+
+
