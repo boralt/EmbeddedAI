@@ -210,7 +210,7 @@ Clause::GetJson(const VarDb &db)const
    for (VarId id=mVarSet.GetFirst(); id != 0; id = mVarSet.GetNext(id))     
    {
       char sz[100];
-      s += AddJsonAttr(sz, sizeof(sz), db[id].c_str(), "%d", mClause[id]?1:0);
+      s += AddJsonAttr(sz, sizeof(sz), db[id].c_str(), "%d", (int) mClause[id]);
 
    }
    s.erase(s.length() - 1);

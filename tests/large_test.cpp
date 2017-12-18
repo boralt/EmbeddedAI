@@ -562,23 +562,54 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
    case 0:  // no drop
 
       nDropDetectedMin = 0;
+      nDropDetectedMax = 0;
+      break;
+
+   case 1:  // drop 1
+      nDropDetectedMin = 1;
+      nDropDetectedMax = 1;
+      break;
+
+   case 2:  // drop 2
+      nDropDetectedMin = 2;
       nDropDetectedMax = 2;
       break;
 
-   case 1:  // low drop
+   case 3: // drop 3
       nDropDetectedMin = 3;
-      nDropDetectedMax = 8;
+      nDropDetectedMax = 3;
       break;
 
-   case 2:  // highdrop
-      nDropDetectedMin = 9;
+   case 4: // drop 4
+      nDropDetectedMin = 4;
+      nDropDetectedMax = 4;
+      break;
+
+   case 5: // drop 5
+      nDropDetectedMin = 5;
+      nDropDetectedMax = 5;
+      break;
+
+   case 6: // drop 10
+      nDropDetectedMin = 6;
+      nDropDetectedMax = 10;
+      break;
+
+   case 7: // drop 20
+      nDropDetectedMin = 11;
       nDropDetectedMax = 20;
       break;
 
-      case 3:
+   case 8: // drop  40
       nDropDetectedMin = 21;
+      nDropDetectedMax = 40;
+      break;
+
+   case 9: // drop 100
+      nDropDetectedMin = 41;
       nDropDetectedMax = 100;
       break;
+
    }
 
    // will use poisson multiplication
@@ -638,30 +669,62 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
    int nDropRate = 300-300*passLevel;
    int nDropDetectedMin = 0;
    int nDropDetectedMax = 1;
-   
-   switch(dropLevel)
+
+   switch (dropLevel)
    {
    case 0:  // no drop
 
       nDropDetectedMin = 0;
-      nDropDetectedMax = 6;
+      nDropDetectedMax = 2;
       break;
 
-   case 1:  // low drop
-      nDropDetectedMin = 7;
-      nDropDetectedMax = 25;
+   case 1:  // drop 1
+      nDropDetectedMin = 3;
+      nDropDetectedMax = 5;
       break;
 
-   case 2:  // highdrop
-      nDropDetectedMin = 26;
-      nDropDetectedMax = 61;
+   case 2:  // drop 2
+      nDropDetectedMin = 6;
+      nDropDetectedMax = 8;
       break;
 
-      case 3:
+   case 3: // drop 3
+      nDropDetectedMin = 9;
+      nDropDetectedMax = 11;
+      break;
+
+   case 4: // drop 4
+      nDropDetectedMin = 12;
+      nDropDetectedMax = 14;
+      break;
+
+   case 5: // drop 5
+      nDropDetectedMin = 15;
+      nDropDetectedMax = 17;
+      break;
+
+   case 6: // drop 10
+      nDropDetectedMin = 18;
+      nDropDetectedMax = 30;
+      break;
+
+   case 7: // drop 20
+      nDropDetectedMin = 31;
+      nDropDetectedMax = 60;
+      break;
+
+   case 8: // drop  40
       nDropDetectedMin = 61;
+      nDropDetectedMax = 120;
+      break;
+
+   case 9: // drop 100
+      nDropDetectedMin = 121;
       nDropDetectedMax = 300;
       break;
+
    }
+
 
    // will use poisson multiplication
    auto poisson = [](int k, int lambda) -> float {
@@ -716,23 +779,24 @@ int InitLargeTest3(VarDb &db, FactorSet &fs)
       db.AddVar(sz,{"none", "1", "2", "full"});
 
       // packet drops
+      auto dropDomain = { "none", "1", "2", "3", "4", "5", "10", "20","40",  "100" };
 
       // drop sublink1
       snprintf(sz, 10, "dr%d_1", nLink);
-      db.AddVar(sz,{"none", "1", "2", "full"});
+      db.AddVar(sz, dropDomain);
 
       // drop sublink 2
       snprintf(sz, 10, "dr%d_2", nLink);
-      db.AddVar(sz,{"none", "1", "2", "full"});
+      db.AddVar(sz, dropDomain);
 
 
       // acc drop sublink1
       snprintf(sz, 10, "dra%d_1", nLink);
-      db.AddVar(sz,{"none", "1", "2", "full"});
+      db.AddVar(sz, dropDomain);
 
       // acc drop sublink 2
       snprintf(sz, 10, "dra%d_2", nLink);
-      db.AddVar(sz,{"none", "1", "2", "full"});
+      db.AddVar(sz, dropDomain);
 
    }
    // conjested endpoint
@@ -788,7 +852,7 @@ int InitLargeTest3(VarDb &db, FactorSet &fs)
       int cjLink, cjSublink, cjEndpoint;
       int dropLevel;  // values of leaf variable
 
-      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
       {
          for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
          {
@@ -821,7 +885,7 @@ int InitLargeTest3(VarDb &db, FactorSet &fs)
       // load factor using factor loader
       Factor::FactorLoader flDrop2(fDrop2);
 
-      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
       {
          for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
          {
@@ -856,7 +920,7 @@ int InitLargeTest3(VarDb &db, FactorSet &fs)
       Factor::FactorLoader flDropA1(fDropA1);
 
       // evaluate 3 previous intervals drop level
-      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
       {
          for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
          {
@@ -890,7 +954,7 @@ int InitLargeTest3(VarDb &db, FactorSet &fs)
       Factor::FactorLoader flDropA2(fDropA2);
 
       // evaluate 3 previous intervals drop level
-      for(dropLevel = 0; dropLevel < 4; dropLevel++)
+      for(dropLevel = 0; dropLevel < 10; dropLevel++)
       {
          for(cjEndpoint = 0; cjEndpoint < 4; cjEndpoint++)
          {
@@ -964,13 +1028,15 @@ int LargeTest3()
    Clause cSample(vsSample);
 
    cSample.AddVar(db["dr1_1"], 0);
-   cSample.AddVar(db["dr1_2"], 1);
+
+   cSample.AddVar(db["dr1_2"], 3);
+
    cSample.AddVar(db["dra1_1"], 0);
    cSample.AddVar(db["dra1_2"], 0);
    cSample.AddVar(db["dr2_1"], 0);
-   cSample.AddVar(db["dr2_2"], 2);
+   cSample.AddVar(db["dr2_2"], 9);
    cSample.AddVar(db["dra2_1"], 0);
-   cSample.AddVar(db["dra2_2"], 1);
+   cSample.AddVar(db["dra2_2"], 9);
    cSample.AddVar(db["dr3_1"], 0);
    cSample.AddVar(db["dr3_2"], 0);
    cSample.AddVar(db["dra3_1"], 0);
