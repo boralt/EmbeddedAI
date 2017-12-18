@@ -69,6 +69,7 @@ int TestCircuit2();
 int TestJson();
 int LargeTest1();
 int LargeTest2();
+int LargeTest3();
 int DecisionTest1();
 int DecisionTest2();
 int DecisionTest3();
@@ -163,6 +164,11 @@ TEST(BASIC, LargeTest2)
     EXPECT_EQ(0, LargeTest2());
 }
 
+TEST(BASIC, LargeTest3)
+{
+    EXPECT_EQ(0, LargeTest3());
+}
+
 
 TEST(EXAMPLE, IspTest1)
 {
@@ -184,7 +190,8 @@ TEST(EXAMPLE, IspDecisionExample)
 int main(int argc, char **argv) {
    ::testing::InitGoogleTest(&argc, argv);
    int res = RUN_ALL_TESTS();
-   //getchar();
+   if(argc > 0 && !strcmp(argv[argc-1], "getchar"))
+      getchar();
    return res;
 }
 
