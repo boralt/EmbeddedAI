@@ -527,66 +527,6 @@ int LargeTest2()
 }
 
 
-#if 0
-float CalcDropProbability(VarState dropState, VarState stage1, ValState stage2, ValState stage3 )
-{
-   float fPassRate = 1.0F;
-   VarState ar[] = {stage1, stage2, stage3};
-
-   for (auto st: ar)
-   {
-      switch(st)
-      {
-         case 0: fPassRate *= 0.995; break;
-         case 1: fPassRate *= 0.95; break;
-         case 2: fPassRate *= 0.8; break;
-         case 3: fPassRate = 0; break;
-         default: break;
-      }
-   }
-
-   float expectedPassHi = 1.0F;
-   float expectedPassLo = 1.0F;
-
-   switch(dropState)
-   {
-      case 0:   // expected pass rate is 0.98 - 1.0
-
-         expectedPassHi = 1.0F;
-         expectedPassLo = 0.98F;
-         break;
-
-      case 1:  // expected pass rate 0.8 - 0.98
-         expectedPassHi = 0.8F;
-         expectedPassLo = 0.90F;
-         break;
-
-      case 2: // expected pass rate 0.01 - 0.8
-         expectedPassHi = 0.8F;
-         expectedPassLo = 0.01F;
-         break;
-
-      case 3:
-         expectedPassHi = 0.F;
-         expectedPassLo = 0.0F;
-         break;
-   }
-
-   float fRes1 = expectedPassHi - fPassRate ;
-   float fRes2 = fPassRate - expectedPassLo;
-
-   return 1;
-
-}
-#endif
-
-
-/** calculate Droplevel probability 
-    @param dropLevel drop level for which probalility is calculated 0-4
-    @param  cj[3]  conjestion levels of the components of  the network path 
-    @return drop level probability
- */    
-
 static float
 CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
 {
@@ -599,10 +539,10 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       switch(cjLevel)
       {
       case 0:   // no congesion
-         passl *= 0.99;
+         passl *= 0.997;
          break;
       case 1:   // low congestion   
-         passl *= 0.95;
+         passl *= 0.96;
          break;
       case 2:   // high congestion
          passl *=0.8;
@@ -647,7 +587,7 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       
       for(int i = 1; i <= k; i++)
       {
-         res *= (lambda /i) ;
+         res *= ((float) lambda /(float) i) ;
       }
       return res;
    };
@@ -680,10 +620,10 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       switch(cjLevel)
       {
       case 0:   // no congesion
-         passLevel *= 0.99;
+         passLevel *= 0.997;
          break;
       case 1:   // low congestion   
-         passLevel *= 0.95;
+         passLevel *= 0.96;
          break;
       case 2:   // high congestion
          passLevel *=0.8;
@@ -729,7 +669,7 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       
       for(int i = 1; i <= k; i++)
       {
-         res *= (lambda /i) ;
+         res *= ((float) lambda /(float) i) ;
       }
       return res;
    };
@@ -744,7 +684,6 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
 }
 
 
-
 /**  Create Model of Carrier Network
      packet drops are measured for each sublink
      The system can sample instantenues and accumulated rate of packet drop
@@ -754,6 +693,7 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
 
 int InitLargeTest3(VarDb &db, FactorSet &fs)
 {
+
    char sz[10];
 
    db.AddVar("cjE", {"none", "1", "2", "full"});
