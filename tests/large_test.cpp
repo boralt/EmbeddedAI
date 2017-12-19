@@ -539,7 +539,7 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       switch(cjLevel)
       {
       case 0:   // no congesion
-         passl *= 0.997;
+         passl *= 0.99;
          break;
       case 1:   // low congestion   
          passl *= 0.96;
@@ -548,7 +548,7 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
          passl *=0.8;
          break;
       case 3:   // full drop
-         passl = 0;
+         passl = 0.6;
       }
    }
 
@@ -614,13 +614,13 @@ CalcDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
 
    // will use poisson multiplication
    auto poisson = [](int k, int lambda) -> float {
-      float res=exp(-lambda);
+      double res=exp(-lambda);
       
       for(int i = 1; i <= k; i++)
       {
-         res *= ((float) lambda /(float) i) ;
+         res *= ((double) lambda /(double) i) ;
       }
-      return res;
+      return (float) res;
    };
    
    float prob = 0;
@@ -651,7 +651,7 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
       switch(cjLevel)
       {
       case 0:   // no congesion
-         passLevel *= 0.997;
+         passLevel *= 0.99;
          break;
       case 1:   // low congestion   
          passLevel *= 0.96;
@@ -660,7 +660,7 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
          passLevel *=0.8;
          break;
       case 3:   // full drop
-         passLevel = 0;
+         passLevel = 0.6;
          break;
       }
    }
@@ -728,13 +728,13 @@ CalcAggrDropLevelProbability(int dropLevel, std::initializer_list<int> cj)
 
    // will use poisson multiplication
    auto poisson = [](int k, int lambda) -> float {
-      float res=exp(-lambda);
+      double res=exp(-lambda);
       
       for(int i = 1; i <= k; i++)
       {
-         res *= ((float) lambda /(float) i) ;
+         res *= ((double) lambda /(double) i) ;
       }
-      return res;
+      return (float) res;
    };
    
    float prob = 0;
@@ -1002,9 +1002,11 @@ int LargeTest3()
    InitLargeTest3(db, fs);
 
    std::string s = fs.GetJson(db);
-   printf("\n==Large test3  with edge Pruning==\n%s\n", s.c_str());
+ 
 
+   printf("\n===Large test3  with edge Pruning===\n%s\n", s.c_str());
 
+ 
    VarSet vsSample(db), vsSolve(db);
 
 //   vsSolve << db["cj1_1"];
@@ -1029,14 +1031,14 @@ int LargeTest3()
 
    cSample.AddVar(db["dr1_1"], 0);
 
-   cSample.AddVar(db["dr1_2"], 3);
+   cSample.AddVar(db["dr1_2"], 5);
 
    cSample.AddVar(db["dra1_1"], 0);
-   cSample.AddVar(db["dra1_2"], 0);
+   cSample.AddVar(db["dra1_2"], 5);
    cSample.AddVar(db["dr2_1"], 0);
    cSample.AddVar(db["dr2_2"], 9);
    cSample.AddVar(db["dra2_1"], 0);
-   cSample.AddVar(db["dra2_2"], 9);
+   cSample.AddVar(db["dra2_2"], 9);  // 
    cSample.AddVar(db["dr3_1"], 0);
    cSample.AddVar(db["dr3_2"], 0);
    cSample.AddVar(db["dra3_1"], 0);
@@ -1082,22 +1084,32 @@ int LargeTest3()
    s = clMpe.GetJson(db);
    printf("==MPE clause ==\n%s\n", s.c_str());
 
-#if 0
+   int nFound = 0;
    for (VarId vid = vsMpe.GetFirst(); vid != 0; vid = vsMpe.GetNext(vid))
    {
-      if (vid == db["drlo3_1"] ||
-         vid == db["drhi3_1"] ||
-         vid == db["drloa3_1"] || vid == db["cjl3_1"])
+      if (!vsSolve.HasVar(vid))
       {
-         EXPECT_TRUE(clMpe[vid]);
+         continue;
+      }
+      
+
+      if (vid == db["cj2_2"])
+      {
+         EXPECT_EQ(clMpe[vid], 3);
+         nFound++;
+      }
+      else if (vid == db["cj1_2"])
+      {
+         EXPECT_EQ(clMpe[vid], 1);
+         nFound++;
       }
       else
       {
-         EXPECT_FALSE(clMpe[vid]);
+         EXPECT_EQ(clMpe[vid],0);
       }
    }
-   EXPECT_NEAR(0.00024, res1->Get(0), 0.00001);
-#endif
+
+   EXPECT_EQ(nFound, 2);
 
 
    return 0;
