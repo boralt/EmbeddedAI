@@ -351,7 +351,10 @@ namespace bayeslib
 	   /// @param vtype typeof variable
 	   void AddVar(std::string, std::initializer_list<const char *> initlist, VarType vtype = VarType_Normal);
 
+      template <class AR> void 
+      VarDb::AddVar(std::string sName, AR initlist, VarType vtype);
 
+      
        /// Find if variable exists in VarDb
        /// @param sName name of variable to check
        bool HasVar(std::string sName);

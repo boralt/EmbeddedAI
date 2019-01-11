@@ -58,6 +58,29 @@ VarDb::AddVar(std::string sName, std::initializer_list<const char *> initlist, V
 }
 
 
+template <class AR> void 
+VarDb::AddVar(std::string sName, AR initlist, VarType vtype)
+{
+   // no repeating names
+   if (HasVar(sName))
+      return;
+
+   VarId id = mAr.size() + 1;
+   //mMap[id] = VarId(sName, id);
+   Var v(sName, id, vtype);
+   for (auto it = initlist.begin(); it != initlist.end(); ++it)
+   {
+      v.AddState(*it);
+
+   }
+
+	mMap[sName] = id;
+	mAr.push_back(v);
+	mArVarTypes.push_back(vtype);
+}
+
+
+
 bool
 VarDb::HasVar(std::string sName)
 {
