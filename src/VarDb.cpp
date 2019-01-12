@@ -36,6 +36,7 @@ VarDb::AddVar(std::string sName, VarType vtype)
    mArVarTypes.push_back(vtype);
 }
 
+#if 0
 void 
 VarDb::AddVar(std::string sName, std::initializer_list<const char *> initlist, VarType vtype)
 {
@@ -78,7 +79,7 @@ VarDb::AddVar(std::string sName, AR initlist, VarType vtype)
 	mAr.push_back(v);
 	mArVarTypes.push_back(vtype);
 }
-
+#endif
 
 
 bool

@@ -349,10 +349,33 @@ namespace bayeslib
 
 	   /// Add Variable with domain to VarDb
 	   /// @param vtype typeof variable
-	   void AddVar(std::string, std::initializer_list<const char *> initlist, VarType vtype = VarType_Normal);
+	   void AddVar(std::string sName, std::initializer_list<const char *> initlist, VarType vtype = VarType_Normal)
+      {
+         AddInitVar(sName, initlist, vtype);
+      }
 
-      template <class AR> void 
-      VarDb::AddVar(std::string sName, AR initlist, VarType vtype);
+      template <typename AR> void
+         VarDb::AddInitVar(std::string sName, AR &&initlist, VarType vtype)
+      {
+         // no repeating names
+         if (HasVar(sName))
+            return;
+
+         VarId id = mAr.size() + 1;
+         //mMap[id] = VarId(sName, id);
+         Var v(sName, id, vtype);
+         for (auto it = initlist.begin(); it != initlist.end(); ++it)
+         {
+            v.AddState(*it);
+
+         }
+
+         mMap[sName] = id;
+         mAr.push_back(v);
+         mArVarTypes.push_back(vtype);
+      }
+
+
 
       
        /// Find if variable exists in VarDb
