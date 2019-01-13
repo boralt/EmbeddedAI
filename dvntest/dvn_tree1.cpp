@@ -27,7 +27,28 @@ static int gNumDeflects =2;
 static int gNumLocal = 2;
 static int gNumRemote = 1;
 
+extern std::map<std::string, double> configMap;
 
+
+void initVars1()
+{
+   if (configMap.count("DropPenalty1"))
+   {
+      gDropPenalty[1] = configMap["DropPenalty1"];
+   }
+
+   if (configMap.count("DropPenalty2"))
+   {
+      gDropPenalty[2] = configMap["DropPenalty2"];
+   }
+   
+   if (configMap.count("DropPenalty3"))
+   {
+      gDropPenalty[3] = configMap["DropPenalty3"];
+   }
+
+   
+}
 
 static std::string VarName(const char *prefix, int deflect, int localLink=-1, int remoteLink=-1)
 {
@@ -468,7 +489,7 @@ static void BuildDecisionCongestion(VarDb &db, int numDeflects, int numLocal, in
 }
 
 
-int TrafficOptimConjTest()
+std::string TrafficOptimConjTest()
 {
    
    VarDb db;
@@ -486,7 +507,7 @@ int TrafficOptimConjTest()
 
 
    std::string sDiag = fs.GetJson(db);
-   printf("\n==Dvn set==\n%s\n", sDiag.c_str());
+   //printf("\n==Dvn set==\n%s\n", sDiag.c_str());
 
 
    // fs.SetDebugLevel(FactorSet::DebugLevel_Details);
@@ -500,24 +521,23 @@ int TrafficOptimConjTest()
       {
          for(int nRemote = 1; nRemote <= gNumRemote; nRemote++)
          {
-            if(nLocal == 2 && nDeflect == 1)
-               cl.AddVar(db[VarName("Drop", nDeflect, nLocal, nRemote)], 1);
-            else if(nLocal == 1 && nDeflect == 2)
-               cl.AddVar(db[VarName("Drop", nDeflect, nLocal, nRemote)], 1);
+            std::string sNodeName = VarName("Drop", nDeflect, nLocal, nRemote);
+            if(configMap.count(sNodeName))
+               cl.AddVar(db[sNodeName], configMap[sNodeName]);
             else
-               cl.AddVar(db[VarName("Drop", nDeflect, nLocal, nRemote)], 0);
+               cl.AddVar(db[sNodeName], 0);
 
          }
       }
    }
    
-   printf("Will apply condition %s\n", cl.GetJson(db).c_str());
+   // printf("Will apply condition %s\n", cl.GetJson(db).c_str());
    ClauseValue res1 = dh->GetDecisions(cl);
    
-   printf("Result is here size=%d var=%s\n", res1.GetVarSet().GetSize(), db[res1.GetVarSet().GetFirst()].c_str());
+   // printf("Result is here size=%d var=%s\n", res1.GetVarSet().GetSize(), db[res1.GetVarSet().GetFirst()].c_str());
 
 
-   printf( "Action is %d with score %f", res1[db["Update"]], res1.GetVal());
-   return res1[db["Update"]];
+   // printf( "Action is %d with score %f", res1[db["Update"]], res1.GetVal());
+   return res1.GetJson(db);
 }
 

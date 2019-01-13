@@ -14,9 +14,9 @@ typedef std::map<std::string, std::shared_ptr<Factor> > MapFactors;
 static MapFactors m;
 
 // provisioned probabilities
-static double gLocalCongProb[4] = { 95., 2., 0.8, 2.2 };
-static double gRemoteCongProb[4] = { 98., 1.0, 0.6, 0.4 };
-static double gDeflectCongProb[4] = { 96., 2.0, 1.2, 0.8 };
+static double gLocalCongProb[4] = { 0.95, 0.02, 0.008, 0.022 };
+static double gRemoteCongProb[4] = { 0.98, 0.01, 0.006, 0.004 };
+static double gDeflectCongProb[4] = { 0.96, 0.02, 0.012, 0.008 };
 
 // provisioned penalties
 static int gDropPenalty[4] = { 0, 10, 41, 101 };
@@ -27,22 +27,25 @@ static int gNumDeflects =2;
 static int gNumLocal = 2;
 static int gNumRemote = 1;
 
-
+extern std::map<std::string, double> configMap;
 
 static std::string VarName(const char *prefix, int deflect, int localLink=-1, int remoteLink=-1)
 {
    char sz[20];
 
    std::string res = prefix;
-   snprintf(sz, 20, "-D%d", deflect);
-   res += sz;
-   if(localLink >= 0)
+   if (deflect > 0)
+   {
+      snprintf(sz, 20, "-D%d", deflect);
+      res += sz;
+   }
+   if(localLink > 0)
    {
       snprintf(sz, 20, "-L%d", localLink);
       res += sz;
    }
    
-   if(remoteLink >= 0)
+   if(remoteLink > 0)
    {
       snprintf(sz, 20, "-R%d", remoteLink);
       res += sz;
@@ -50,6 +53,36 @@ static std::string VarName(const char *prefix, int deflect, int localLink=-1, in
 
    return res;
 }
+
+void initVars()
+{
+   if (configMap.count("DropPenalty1"))
+   {
+      gDropPenalty[1] = configMap["DropPenalty1"];
+   }
+
+   if (configMap.count("DropPenalty2"))
+   {
+      gDropPenalty[2] = configMap["DropPenalty2"];
+   }
+   
+   if (configMap.count("DropPenalty3"))
+   {
+      gDropPenalty[3] = configMap["DropPenalty3"];
+   }
+
+   if (configMap.count("LatencyPenalty1"))
+   {
+      gLatencyPenalty[1] = configMap["LatencyPenalty1"];
+   }
+
+   if (configMap.count("LatencyPenalty2"))
+   {
+      gLatencyPenalty[2] = configMap["LatencyPenalty2"];
+   }
+   
+}
+
 
 static void BuildCongestion(VarDb &db, int numDeflects, int numLocal, int numRemote)
 {
@@ -292,23 +325,17 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
    std::list<std::string> arDomainList;
    arDomainList.push_back("None");
 
-   for(int nDeflect=1; nDeflect <= numDeflects; nDeflect++)
+   for(int nLocal = 1; nLocal <= numLocal; nLocal++)
    {
-      for(int nLocal = 1; nLocal <= numLocal; nLocal++)
-      {
-         arDomainList.push_back(VarName("SQ-Local", nDeflect, nLocal));
-      }
+      arDomainList.push_back(VarName("SQ-Local", 0, nLocal));
    }
 
 
-   for(int nDeflect=1; nDeflect <= numDeflects; nDeflect++)
+   for(int nRemote = 1; nRemote <= numRemote; nRemote++)
    {
-      for(int nRemote = 1; nRemote <= numRemote; nRemote++)
-      {
-         arDomainList.push_back(VarName("SQ-Remote", nDeflect, -1, nRemote));
-      }
+      arDomainList.push_back(VarName("SQ-Remote", 0, -1, nRemote));
    }
-
+   
    for(int nDeflect = 1; nDeflect <= numDeflects; nDeflect++)
    {
       arDomainList.push_back(VarName("Roll", nDeflect));
@@ -447,43 +474,50 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
          }
       }
 
+      // calculate cost for this row
+      double cost = -2;
+
       int nDecision = i % arDomainList.size();
 
       // apply decision to current row
-      if (nDecision < numLocal)
+      if (nDecision == 0)
+      {
+         // none action
+      }
+      else  if (nDecision < (numLocal+1))
       {
          // squelch local link
-         n = nDecision;
+         n = nDecision-1;
          arLocalConj[n] = 0;   // erase local congestion
          for(d = 0; d < numDeflects; d++)  // erase local latencies
             arLatLocal[d][n] = 0;
 
          nLocalAvail--;
+         cost -= 3;
       }
-      else if(nDecision < (numLocal + numRemote))
+      else if(nDecision < (numLocal + numRemote+1))
       {
-         n = nDecision - numLocal;
+         n = nDecision - numLocal-1;
          arRemoteConj[n] = 0;
          for(d = 0; d < numDeflects; d++)  // erase remote latencies
             arLatRemote[d][n] = 0;
 
          nRemoteAvail--;
+         cost -= 3;
       }
-      else if(nDecision < (numLocal + numRemote + numDeflects))
+      else if(nDecision < (numLocal + numRemote + numDeflects+1))
       {
-         d = nDecision - numLocal - numRemote;
+         d = nDecision - numLocal - numRemote-1;
          arDeflectConj[d] = 0;
          for(n = 0; n < numLocal; n++)  // erase local latencies
             arLatLocal[d][n] = 0;
          for(n = 0; n < numRemote; n++)  // erase local latencies
             arLatRemote[d][n] = 0;
+         cost-= 1;
       }
       else
          abort();
       
-      // calculate cost for this row
-      double cost = -2;
-
       // penalties for drop
 
       for(n=0; n < numLocal; n++)
@@ -526,7 +560,102 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
 }
 
 
-int TrafficOptimTest()
+std::string FailureFindTest()
+{
+   VarDb db;
+   FactorSet fs(db);
+   std::string s;
+
+   BuildCongestion(db, gNumDeflects, gNumLocal, gNumRemote);
+   BuildLatencies(db, gNumDeflects, gNumLocal, gNumRemote);
+   std::for_each(std::begin(m), std::end(m), [&fs](auto it) { fs.AddFactor(it.second); });
+
+   VarSet vsSample(db), vsSolve(db);
+
+   for(int nLocal = 1; nLocal <= gNumLocal; nLocal++)
+   {
+      s = VarName("IngressLinkConj", 0, nLocal);
+      vsSolve << db[s];
+   }
+
+   for(int nRemote = 1; nRemote <= gNumRemote; nRemote++)
+   {
+      s = VarName("EgressLinkConj", 0, -1, nRemote);
+      vsSolve << db[s];
+   }   
+
+   for(int nDeflect=1; nDeflect <= gNumDeflects; nDeflect++)
+   {
+      for(int nRemote = 1; nRemote <= gNumRemote; nRemote++)
+      {
+         s = VarName("LatencyRemote", nDeflect, -1, nRemote);
+         vsSolve << db[s];
+      }
+   }
+   
+
+   for(int nDeflect=1; nDeflect <= gNumDeflects; nDeflect++)
+   {
+      for(int nLocal = 1; nLocal <= gNumLocal; nLocal++)
+      {
+         s = VarName("LatencyLocal", nDeflect, nLocal, -1);
+         vsSolve << db[s];
+      }
+   }
+
+   VarSet varDbSet = db.GetVarSet();
+   vsSample = db.GetVarSet().Substract(vsSolve);
+
+   Clause cl(vsSample);
+  
+   for (int nDeflect = 1; nDeflect <= gNumDeflects; nDeflect++)
+   {
+      for(int nLocal = 1; nLocal <= gNumLocal; nLocal++)
+      {
+         for(int nRemote = 1; nRemote <= gNumRemote; nRemote++)
+         {
+            std::string sNodeName = VarName("Drop", nDeflect, nLocal, nRemote);
+            if (configMap.count(sNodeName))
+               cl.AddVar(db[sNodeName], configMap[sNodeName]);
+            else
+               cl.AddVar(db[sNodeName], 0);
+
+            sNodeName = VarName("Latency", nDeflect, nLocal, nRemote);
+            if (configMap.count(sNodeName))
+               cl.AddVar(db[sNodeName], configMap[sNodeName]);
+            else
+               cl.AddVar(db[sNodeName], 0);
+
+
+
+            //cl.AddVar(db[VarName("Drop", nDeflect, nLocal, nRemote)], (nDeflect==1)? 3:0);
+            //cl.AddVar(db[VarName("Latency", nDeflect, nLocal, nRemote)], 2);
+         }
+      }
+   }
+
+   fs.PruneEdges(cl);
+   fs.ApplyClause(cl);
+   InteractionGraph ig(&fs);
+   VarSet optVs = ig.GetElimOrder();
+   fs.MaximizeVar(optVs);
+
+   std::shared_ptr<Factor> res1 = fs.Merge();
+   s = res1->GetJson(db);
+   //printf("\n==After MPE calculation ==\n%s\n", s.c_str());
+
+   VarSet vsMpe = res1->GetExtendedVarSet();
+   InstanceId instanceMpe = res1->GetExtendedClause(0);
+   Clause clMpe(vsMpe, instanceMpe);
+   s = clMpe.GetJson(db);
+   // printf("==MPE clause ==\n%s\n", s.c_str());
+
+   return clMpe.GetJson(db);
+   
+}
+
+
+std::string TrafficOptimTest()
 {
    
    VarDb db;
@@ -568,11 +697,12 @@ int TrafficOptimTest()
 
    ClauseValue res1 = dh->GetDecisions(cl);
    
-   printf("Result is here size=%d var=%s\n", res1.GetVarSet().GetSize(), db[res1.GetVarSet().GetFirst()].c_str());
+   //printf("Result is here size=%d var=%s\n", res1.GetVarSet().GetSize(), db[res1.GetVarSet().GetFirst()].c_str());
 
 
-   printf( "Action is %d with score %f", res1[db["Update"]], res1.GetVal());
-   return res1[db["Update"]];
+   //printf( "Action is %d with score %f", res1[db["Update"]], res1.GetVal());
+   //return res1[db["Update"]];
+   return res1.GetJson(db);
 }
 
    
