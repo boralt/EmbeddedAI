@@ -377,17 +377,19 @@ FactorSet::BuildDecision()
       {
          if((*iter2)->GetClauseHead().HasVar(varUtility))
          {
+            printf("!!!! Actually running maximizer for decision %d %s!!!!\n", vidDecision, mDb[vidDecision].c_str());
+
             std::shared_ptr<Factor> pFactor = (*iter2);
             // B.A. temporary
-            // std::string sDebug1 = pFactor->GetJson(mDb);
-            // printf("\n Interm quest: %s", sDebug1.c_str());
+            std::string sDebug1 = pFactor->GetJson(mDb);
+            printf("\n Interm quest: %s", sDebug1.c_str());
 
 
             std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);
 
             // B.A. temporary
-            // std::string sDebug2 = pResult->GetJson(mDb);
-            // printf("\n Interm result: %s\n", sDebug2.c_str());
+            std::string sDebug2 = pResult->GetJson(mDb);
+            printf("\n Interm result: %s\n", sDebug2.c_str());
 
             // pResult incrporates decision Function and new Factor
             // separate both

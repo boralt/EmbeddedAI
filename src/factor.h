@@ -355,7 +355,7 @@ namespace bayeslib
       }
 
       template <typename AR> void
-         VarDb::AddInitVar(std::string sName, AR &&initlist, VarType vtype)
+         VarDb::AddInitVar(std::string sName, AR &&initlist, VarType vtype = VarType_Normal)
       {
          // no repeating names
          if (HasVar(sName))
@@ -840,7 +840,7 @@ namespace bayeslib
         VarSet mExtendedVarSet;
         FactorExtender *mpExtender;
 
-		VarType mFactorType;
+		  VarType mFactorType;
    };
 
    /// fin manipulator is used to complete load Factor values by calculating complimentary

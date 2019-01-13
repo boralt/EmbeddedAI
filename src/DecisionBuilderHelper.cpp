@@ -60,7 +60,7 @@ DecisionBuilderHelper::GetDecisions(const Clause &sample)
 
 				// fetch decision into return clause and also running clause
 				InstanceId instid = clauseAllData.GetInstanceId(df->GetVarSet());
-				bool bDecision = df->GetDecision(instid);
+			   VarState bDecision = df->GetDecision(instid);
 				val = df->Get(instid);
 				res.AddVar(vidDecisionId, bDecision);
 				clauseAllData.AddVar(vidDecisionId, bDecision);
