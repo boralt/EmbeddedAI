@@ -1,5 +1,5 @@
 // dvntest.cpp : Defines the entry point for the console application.
-//
+// python -m CGIHTTPServer
 
 #include "stdafx.h"
 
@@ -107,24 +107,61 @@ extern std::string  FailureFindTest();
 extern void initVars1();
 extern void initVars();
 
+#if 0
+int main(int argc, char **argv, char**envp) {
+   std::cout << "Content-Type:text/html:" << std::endl << std::endl;
+   std::cout << "Content-Type:text/html:" << std::endl << std::endl;
+   for (int i = 0; i < argc; i++)
+   {
+      std::cout << "Param #" << i << " is " << argv[i] << std::endl;
+
+   }
+
+   char *strlength = getenv("CONTENT_LENGTH");
+   std::cout << "CONTENT LEN " << (strlength?strlength:"none") << std::endl;
+
+   for (char **env = envp; *env != 0; env++)
+   {
+      char *thisEnv = *env;
+      std::cout << "== " << thisEnv << " ==" << std::endl;
+   }
+
+   std::cout << "=========== Parsing=============" << std::endl;
+
+   std::map <std::string, std::string> Post;
+   initializePost(Post);
+
+   for (auto it = Post.begin(); it != Post.end(); ++it)
+   {
+      std::cout << "Name " << it->first << " Val " << it->second << std::endl;
+   }
+
+   return 0;
+}
+#endif
+
+
 int main(int argc, char **argv)
 {
+
    int err = 0;
-   if(argc > 1)
+   char *strlength = getenv("CONTENT_LENGTH");
+   if (strlength == NULL && argc > 1) 
    {
+      std::string s;
       if (!strncmp(argv[1], "Optim",5))
       {
-         TrafficOptimTest();
+         s=TrafficOptimTest();
       }
       else if (!strncmp(argv[1], "Conj",4))
       {
-         TrafficOptimConjTest();
+         s=TrafficOptimConjTest();
       }
       else if (!strncmp(argv[1], "Find",4))
       {
-         FailureFindTest();
+         s=FailureFindTest();
       }
-      getchar();
+      std::cout << s.c_str();
    }
    else
    {
@@ -135,23 +172,28 @@ int main(int argc, char **argv)
       if(Post.count("req"))
       {
          sReq = Post["req"];
-         err =1;
+       }
+      else
+      {
+         err = 1;
       }
 
+      Json::Value v;
       if (Post.count("data"))
       {
-         Json::Value v;
+         
          Json::Reader r;
-         if (!r.parse("data", v))
+         if (!r.parse(Post["data"], v))
          {
-            err = 1;
+            err = 2;
          }
          else
          {
             for (Json::Value::iterator it = v.begin();
                  it != v.end(); ++it)
             {
-               configMap[it.name()] == it->asDouble();
+               
+               configMap[it.name()] = atof(it->asCString());
             }
          }
       }
@@ -175,17 +217,26 @@ int main(int argc, char **argv)
             sRes= FailureFindTest();
          }
          std::cout << "Content-Type:text/html:" << std::endl << std::endl;
+
+         for (auto it = configMap.begin();
+            it != configMap.end(); ++it)
+         {
+            std::cout << it->first.c_str() << " = " << it->second << std::endl;
+         }
+
+
          std::cout << sRes.c_str() << std::endl;
         
       }
       else
       {
          std::cout << "Content-Type:text/html:" << std::endl << std::endl;
-         std::cout << "{\"res\":\"failed\"}" << std::endl;
+         std::cout << "{\"res\":\"failed\", \"err\":" << err << "}" << std::endl;
 
       }
       
    }
    return 0;
 }
+
 
