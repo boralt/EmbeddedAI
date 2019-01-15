@@ -355,7 +355,7 @@ namespace bayeslib
       }
 
       template <typename AR> void
-         VarDb::AddInitVar(std::string sName, AR &&initlist, VarType vtype = VarType_Normal)
+         AddInitVar(std::string sName, AR &&initlist, VarType vtype = VarType_Normal)
       {
          // no repeating names
          if (HasVar(sName))
