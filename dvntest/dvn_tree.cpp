@@ -247,14 +247,15 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          db.AddVar(s, {"Low", "Med", "Hi"});
          
          VarSet vs(db);
+         vs << db[VarName("EgressLinkConj", -1, -1, nRemote)];
          vs << db[s];
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
          fLatLoader <<
-            0.8 <<
-            0.1 <<
-            0.1 << fin;
+            0.9 <<   0.88 << 0.85 << 0.80 <<
+            0.05 <<  0.06 << 0.08 << 0.1 <<
+            0.05 <<  0.06 << 0.07 << 0.1 << fin;
          
       }
    }
@@ -268,14 +269,16 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          db.AddVar(s, {"Low", "Med", "Hi"});
          
          VarSet vs(db);
+         vs << db[VarName("IngressLinkConj", -1, nLocal, -1)];
          vs << db[s];
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
          fLatLoader <<
-            0.8 <<
-            0.1 <<
-            0.1 << fin;
+                    0.9 <<   0.88 << 0.85 << 0.80 <<
+                    0.05 <<  0.06 << 0.08 << 0.1 <<
+                    0.05 <<  0.06 << 0.07 << 0.1 << fin;
+
       }
    }
 
@@ -293,6 +296,7 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
             VarSet vsNew(db);
             vsNew.Add(db[VarName("LatencyLocal", nDeflect, nLocal, -1)]);
             vsNew.Add(db[VarName("LatencyRemote", nDeflect, -1, nRemote)]);
+
             vsNew << db[s];
             std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vsNew, db[s]);
 
@@ -388,7 +392,7 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
    std::shared_ptr<Factor> fUpdateDecision = std::make_shared<Factor>(vsUpdate, db["Update"]);
    fUpdateDecision->SetFactorType(VarType_Decision);
    m["Update"] = fUpdateDecision;
-   printf("Update size is %ld \n", vsUpdate.GetInstances());
+   //printf("Update size is %ld \n", vsUpdate.GetInstances());
 
    db.AddVar("Utility", VarType_Utility);
 
@@ -439,7 +443,7 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
    InstanceId utilityInstance = 0;
    InstanceId maxInstance = vsUtility.GetInstances();
    
-   printf("Utility size is %d \n", maxInstance);
+   //printf("Utility size is %d \n", maxInstance);
 
    for(utilityInstance = 0; utilityInstance < maxInstance; utilityInstance++)
    {

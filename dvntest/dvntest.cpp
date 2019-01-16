@@ -130,10 +130,10 @@ int main(int argc, char **argv, char**envp) {
    std::map <std::string, std::string> Post;
    initializePost(Post);
 
-   for (auto it = Post.begin(); it != Post.end(); ++it)
-   {
-      std::cout << "Name " << it->first << " Val " << it->second << std::endl;
-   }
+//   for (auto it = Post.begin(); it != Post.end(); ++it)
+//   {
+//      std::cout << "Name " << it->first << " Val " << it->second << std::endl;
+//   }
 
    return 0;
 }
@@ -222,11 +222,11 @@ int main(int argc, char **argv)
          }
          std::cout << "Content-Type:text/html:" << std::endl << std::endl;
 
-         for (auto it = configMap.begin();
-            it != configMap.end(); ++it)
-         {
-            std::cout << it->first.c_str() << " = " << it->second << std::endl;
-         }
+         //for (auto it = configMap.begin();
+         //   it != configMap.end(); ++it)
+         //{
+         //   std::cout << it->first.c_str() << " = " << it->second << std::endl;
+         //}
 
 
          std::cout << sRes.c_str() << std::endl;
