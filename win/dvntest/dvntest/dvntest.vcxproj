@@ -23,7 +23,7 @@
     <ProjectGuid>{07F29769-2E49-4816-BADA-D8972E0FCDA5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>dvntest</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
