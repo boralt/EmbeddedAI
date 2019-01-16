@@ -21,26 +21,46 @@
     background-repeat:no-repeat;
  }
 
-.dentry {
+.dentry_drop {
     position: absolute;
     font-size: 12px; 
-    background-color: #fafafa;
+    background-color: #ffAAAA;
+    width: 20px; 
+    border: solid 3px #000000;
+    text-align: center;
+}
+
+.dentry_lat {
+    position: absolute;
+    font-size: 12px; 
+    background-color: #AAAAFF;
     width: 20px; 
     border: solid 3px #000000;
     text-align: center;
 }
 
  
-.dres {
+ 
+.dres_drop {
     position: absolute;
     font-size: 12px; 
-    background-color: #fafafa;
+    background-color: #ffAAAA;
     width: 20px; 
     border: solid 3px #ff0000;
     text-align: center;
     user-select: none;
 }
 
+ 
+.dres_lat {
+    position: absolute;
+    font-size: 12px; 
+    background-color: #AAAAFF;
+    width: 20px; 
+    border: solid 3px #ff0000;
+    text-align: center;
+    user-select: none;
+}
  
  
 #Drop-D1-L1-R1 { 
@@ -168,31 +188,31 @@
 
 <div id="form1">  
 <form action = "./cgi-bin/dvntest.exe" method = "post" width="100%" height="100%">
-<input type = "text" name = "Drop-D1-L1-R1" id="Drop-D1-L1-R1" class="dentry" > <br />
-<input type = "text" name = "Drop-D1-L2-R1" id="Drop-D1-L2-R1" class="dentry" > <br />
-<input type = "text" name = "Drop-D2-L1-R1" id="Drop-D2-L1-R1" class="dentry" > <br />
-<input type = "text" name = "Drop-D2-L2-R1" id="Drop-D2-L2-R1" class="dentry" > <br />
+<input type = "text" name = "Drop-D1-L1-R1" id="Drop-D1-L1-R1" class="dentry_drop" > <br />
+<input type = "text" name = "Drop-D1-L2-R1" id="Drop-D1-L2-R1" class="dentry_drop" > <br />
+<input type = "text" name = "Drop-D2-L1-R1" id="Drop-D2-L1-R1" class="dentry_drop" > <br />
+<input type = "text" name = "Drop-D2-L2-R1" id="Drop-D2-L2-R1" class="dentry_drop" > <br />
 
-<input type = "text" name = "Latency-D1-L1-R1" id="Latency-D1-L1-R1" class="dentry" > <br />
-<input type = "text" name = "Latency-D1-L2-R1" id="Latency-D1-L2-R1" class="dentry" > <br />
-<input type = "text" name = "Latency-D2-L1-R1" id="Latency-D2-L1-R1" class="dentry" > <br />
-<input type = "text" name = "Latency-D2-L2-R1" id="Latency-D2-L2-R1" class="dentry" > <br />
+<input type = "text" name = "Latency-D1-L1-R1" id="Latency-D1-L1-R1" class="dentry_lat" > <br />
+<input type = "text" name = "Latency-D1-L2-R1" id="Latency-D1-L2-R1" class="dentry_lat" > <br />
+<input type = "text" name = "Latency-D2-L1-R1" id="Latency-D2-L1-R1" class="dentry_lat" > <br />
+<input type = "text" name = "Latency-D2-L2-R1" id="Latency-D2-L2-R1" class="dentry_lat" > <br />
 
-<input type = "text" name = "IngressLinkConj-L1" id="IngressLinkConj-L1" class="dres" > <br />
-<input type = "text" name = "IngressLinkConj-L2" id="IngressLinkConj-L2" class="dres" > <br />
+<input type = "text" name = "IngressLinkConj-L1" id="IngressLinkConj-L1" class="dres_drop" > <br />
+<input type = "text" name = "IngressLinkConj-L2" id="IngressLinkConj-L2" class="dres_drop" > <br />
 
-<input type = "text" name = "EggressLinkConj-R1" id="EgressLinkConj-R1" class="dres" > <br />
+<input type = "text" name = "EggressLinkConj-R1" id="EgressLinkConj-R1" class="dres_drop" > <br />
 
-<input type = "text" name = "DeflectConj-D1" id="DeflectConj-D1" class="dres" > <br />
-<input type = "text" name = "DeflectConj-D2" id="DeflectConj-D2" class="dres" > <br />
+<input type = "text" name = "DeflectConj-D1" id="DeflectConj-D1" class="dres_drop" > <br />
+<input type = "text" name = "DeflectConj-D2" id="DeflectConj-D2" class="dres_drop" > <br />
 
-<input type = "text" name = "LatencyLocal-D1-L1" id="LatencyLocal-D1-L1" class="dres" > <br />
-<input type = "text" name = "LatencyLocal-D1-L2" id="LatencyLocal-D1-L2" class="dres" > <br />
-<input type = "text" name = "LatencyLocal-D2-L1" id="LatencyLocal-D2-L1" class="dres" > <br />
-<input type = "text" name = "LatencyLocal-D2-L2" id="LatencyLocal-D2-L2" class="dres" > <br />
+<input type = "text" name = "LatencyLocal-D1-L1" id="LatencyLocal-D1-L1" class="dres_lat" > <br />
+<input type = "text" name = "LatencyLocal-D1-L2" id="LatencyLocal-D1-L2" class="dres_lat" > <br />
+<input type = "text" name = "LatencyLocal-D2-L1" id="LatencyLocal-D2-L1" class="dres_lat" > <br />
+<input type = "text" name = "LatencyLocal-D2-L2" id="LatencyLocal-D2-L2" class="dres_lat" > <br />
 
-<input type = "text" name = "LatencyRemote-D1-R1" id="LatencyRemote-D1-R1" class="dres" > <br />
-<input type = "text" name = "LatencyRemote-D2-R1" id="LatencyRemote-D2-R1" class="dres" > <br />
+<input type = "text" name = "LatencyRemote-D1-R1" id="LatencyRemote-D1-R1" class="dres_lat" > <br />
+<input type = "text" name = "LatencyRemote-D2-R1" id="LatencyRemote-D2-R1" class="dres_lat" > <br />
 
 
 
