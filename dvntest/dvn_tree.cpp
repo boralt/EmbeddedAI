@@ -3,6 +3,7 @@
 #include <Factories.h>
 #include <json/json.h>
 #include <fstream>
+#include <math.h>
 #include <gtest/gtest.h>
 
 #define MAX_NIC 4
@@ -28,6 +29,7 @@ static int gNumLocal = 2;
 static int gNumRemote = 1;
 
 extern std::map<std::string, double> configMap;
+extern bool gDebug;
 
 static std::string VarName(const char *prefix, int deflect, int localLink=-1, int remoteLink=-1)
 {
@@ -155,8 +157,8 @@ static void BuildCongestion(VarDb &db, int numDeflects, int numLocal, int numRem
 
             // build varset for detected drop deflect
             VarSet vsNew(db);
-            vsNew.Add(db[VarName("EgressLinkConj", 0, -1, nRemote)]);
             vsNew.Add(db[VarName("IngressLinkConj", 0, nLocal)]);
+            vsNew.Add(db[VarName("EgressLinkConj", 0, -1, nRemote)]);
             vsNew.Add(db[VarName("DeflectConj", nDeflect)]);
             vsNew.Add(db[s]);
 
@@ -177,29 +179,45 @@ static void BuildCongestion(VarDb &db, int numDeflects, int numLocal, int numRem
                      for (int dropOnLocal = 0; dropOnLocal < 4; dropOnLocal++)
                      {
                         // conceptual drop rate
-                        double valDrop = log(exp(dropOnDeflect) +  exp(dropOnRemote) +
-                                             exp(dropOnLocal));
+                        //double valDrop = log(exp(dropOnDeflect) +  exp(dropOnRemote) +
+                        //                     exp(dropOnLocal));
+
+                        //if(dropDetected == 3)
+                        //{
+                        //   printf("-\n");
+                        //}
+
+                        double valDrop = std::max({dropOnDeflect, dropOnLocal, dropOnRemote});
+                        if( valDrop < ((dropDetected + dropOnLocal +dropOnRemote)/2 - 1))
+                           valDrop++;
 
                         double prob = 0;
-                        if(dropDetected > (valDrop+3) || dropDetected < (valDrop -3))
+                        if(dropDetected >= (valDrop+3) || dropDetected < (valDrop -3))
                         {
                            prob = 0.01;
                         }
                         else
-                        if(dropDetected > (valDrop+2) || dropDetected < (valDrop -2))
+                        if(dropDetected >= (valDrop+2) || dropDetected < (valDrop -2))
                         {
                            prob = 0.05;
                         }
                         else
-                        if(dropDetected > (valDrop+1) || dropDetected < (valDrop -1))
+                        if(dropDetected >= (valDrop+1) || (dropDetected < (valDrop -1) && dropDetected != 3) )
                         {
                            prob = 0.1;
                         }
                         else
                         {
-                           prob = 0x84;
+                           prob = 0.84;
                         }
-                        
+
+                        //if(dropDetected == 3)
+                        //{
+                        //   printf("For %d-%d-%d val=%f\n", dropOnDeflect, dropOnLocal, dropOnRemote, prob);
+
+                        //}
+
+
                         fConj->AddInstance(idInstance, prob);
                         idInstance++;
                      }
@@ -229,14 +247,15 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          db.AddVar(s, {"Low", "Med", "Hi"});
          
          VarSet vs(db);
+         vs << db[VarName("EgressLinkConj", -1, -1, nRemote)];
          vs << db[s];
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
          fLatLoader <<
-            0.8 <<
-            0.1 <<
-            0.1 << fin;
+            0.9 <<   0.88 << 0.85 << 0.80 <<
+            0.05 <<  0.06 << 0.08 << 0.1 <<
+            0.05 <<  0.06 << 0.07 << 0.1 << fin;
          
       }
    }
@@ -250,14 +269,16 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          db.AddVar(s, {"Low", "Med", "Hi"});
          
          VarSet vs(db);
+         vs << db[VarName("IngressLinkConj", -1, nLocal, -1)];
          vs << db[s];
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
          fLatLoader <<
-            0.8 <<
-            0.1 <<
-            0.1 << fin;
+                    0.9 <<   0.88 << 0.85 << 0.80 <<
+                    0.05 <<  0.06 << 0.08 << 0.1 <<
+                    0.05 <<  0.06 << 0.07 << 0.1 << fin;
+
       }
    }
 
@@ -275,6 +296,7 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
             VarSet vsNew(db);
             vsNew.Add(db[VarName("LatencyLocal", nDeflect, nLocal, -1)]);
             vsNew.Add(db[VarName("LatencyRemote", nDeflect, -1, nRemote)]);
+
             vsNew << db[s];
             std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vsNew, db[s]);
 
@@ -370,7 +392,7 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
    std::shared_ptr<Factor> fUpdateDecision = std::make_shared<Factor>(vsUpdate, db["Update"]);
    fUpdateDecision->SetFactorType(VarType_Decision);
    m["Update"] = fUpdateDecision;
-   printf("Update size is %ld \n", vsUpdate.GetInstances());
+   //printf("Update size is %ld \n", vsUpdate.GetInstances());
 
    db.AddVar("Utility", VarType_Utility);
 
@@ -421,7 +443,7 @@ static void BuildDecision(VarDb &db, int numDeflects, int numLocal, int numRemot
    InstanceId utilityInstance = 0;
    InstanceId maxInstance = vsUtility.GetInstances();
    
-   printf("Utility size is %d \n", maxInstance);
+   //printf("Utility size is %d \n", maxInstance);
 
    for(utilityInstance = 0; utilityInstance < maxInstance; utilityInstance++)
    {
@@ -568,7 +590,13 @@ std::string FailureFindTest()
 
    BuildCongestion(db, gNumDeflects, gNumLocal, gNumRemote);
    BuildLatencies(db, gNumDeflects, gNumLocal, gNumRemote);
-   std::for_each(std::begin(m), std::end(m), [&fs](auto it) { fs.AddFactor(it.second); });
+   std::for_each(std::begin(m), std::end(m), [&fs](MapFactors::const_reference it) { fs.AddFactor(it.second); });
+
+   if(gDebug) {
+      std::string sDebug = fs.GetJson(db);
+      std::cout << "FactorrSet: " << sDebug;
+   }
+
 
    VarSet vsSample(db), vsSolve(db);
 
@@ -582,7 +610,14 @@ std::string FailureFindTest()
    {
       s = VarName("EgressLinkConj", 0, -1, nRemote);
       vsSolve << db[s];
-   }   
+   }
+
+   for(int nDeflect = 1; nDeflect <= gNumDeflects; nDeflect++)
+   {
+      s = VarName("DeflectConj", nDeflect, -1, -1);
+      vsSolve << db[s];
+   }
+
 
    for(int nDeflect=1; nDeflect <= gNumDeflects; nDeflect++)
    {
@@ -668,7 +703,7 @@ std::string TrafficOptimTest()
    //std::string sDiag = db.GetJson();
    //printf("\n==Dvn set==\n%s\n", sDiag.c_str());
 
-   std::for_each(std::begin(m), std::end(m), [&fs](auto it) { fs.AddFactor(it.second);});
+   std::for_each(std::begin(m), std::end(m), [&fs](MapFactors::const_reference it) { fs.AddFactor(it.second);});
 
 
 

@@ -4,6 +4,7 @@
 #include <json/json.h>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <math.h>
 
 #define MAX_NIC 4
 #define MAX_DEFLECT 10
@@ -502,7 +503,7 @@ std::string TrafficOptimConjTest()
    //std::string sDiag = db.GetJson();
    //printf("\n==Dvn set==\n%s\n", sDiag.c_str());
 
-   std::for_each(std::begin(m), std::end(m), [&fs](auto it) { fs.AddFactor(it.second);});
+   std::for_each(std::begin(m), std::end(m), [&fs](MapFactors::const_reference it) { fs.AddFactor(it.second);});
 
 
 

@@ -12,6 +12,7 @@
 #include <json/json.h>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <math.h>
 
 
 using namespace bayeslib;
