@@ -252,11 +252,27 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
-         fLatLoader <<
-            0.9 <<   0.88 << 0.85 << 0.80 <<
-            0.05 <<  0.06 << 0.08 << 0.1 <<
-            0.05 <<  0.06 << 0.07 << 0.1 << fin;
-         
+
+         //   0.9 <<   0.88 << 0.85 << 0.80 <<
+         //   0.06 <<  0.07 << 0.08 << 0.11 <<
+         //   0.04 <<  0.05 << 0.07 << 0.09 << fin;
+
+         // in a zone with local
+         if(nDeflect == 1) {
+            fLatLoader << 0.1 << 0.095 << 0.09 << 0.08 <<
+                          0.7 << 0.7 << 0.7 << 0.7 <<
+                          0.2 << 0.205 << 0.21 << 0.22 << fin;
+         }
+         else
+         {
+            // deflect in zone with remote
+            fLatLoader << 0.7 << 0.7 << 0.7 << 0.7 <<
+                       0.2 << 0.205 << 0.21 << 0.22 <<
+                       0.1 << 0.095 << 0.09 << 0.08 << fin;
+
+
+         }
+
       }
    }
    
@@ -274,10 +290,17 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
          std::shared_ptr<Factor> fLat = std::make_shared<Factor>(vs, db[s]);
          m[s] = fLat;
          Factor::FactorLoader fLatLoader(fLat);
-         fLatLoader <<
-                    0.9 <<   0.88 << 0.85 << 0.80 <<
-                    0.05 <<  0.06 << 0.08 << 0.1 <<
-                    0.05 <<  0.06 << 0.07 << 0.1 << fin;
+         if(nDeflect == 2) {
+            fLatLoader << 0.1 << 0.095 << 0.09 << 0.08 <<
+                       0.7 << 0.7 << 0.7 << 0.7 <<
+                       0.2 << 0.205 << 0.21 << 0.22 << fin;
+         }
+         else {
+            // deflect in zone with remote
+            fLatLoader << 0.7 << 0.7 << 0.7 << 0.7 <<
+                       0.2 << 0.205 << 0.21 << 0.22 <<
+                       0.1 << 0.095 << 0.09 << 0.08 << fin;
+         }
 
       }
    }
@@ -317,18 +340,29 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
                      {
                         val = 0.18;
                      }
+                     else if (nLatency == nExpected)
+                     {
+                        val = 0.5;
+                     }
                      else
                      {
-                        val = 0.8;
+                        val = 0.3;
                      }
 
                      fLat->AddInstance(idInstance, val);
                      idInstance++;
+                     if(nDeflect==1 && nLocal==1 && nRemote==1)
+                     {
+
+                        printf("L=%d R=%d N=%d V=%f\n", nLatencyLocal, nLatencyRemote, nLatency, val);
+                     }
+
                   }
                }
             }
 
-            
+
+
             m[s] = fLat;
          }
       }
