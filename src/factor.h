@@ -598,6 +598,13 @@ namespace bayeslib
 		   return mVal;
 	   }
 
+
+      // from UIElem
+      /// Get Json representation of this Clause
+      /// @return string with Json representatin of this clause
+      virtual std::string GetJson(const VarDb &)const override;
+
+
    protected:
 	   ValueType mVal;
 
@@ -658,6 +665,11 @@ namespace bayeslib
       /// @param instance InstanceId representing Clause (row) in this table
       /// @return extendedInstance InstanceId of Clause in ExtendedVarset that is associated with #instance 
       InstanceId GetExtendedClause(InstanceId instance);
+
+      /// Get InstanceId of ExtendedVarSet that is associated with a row in a Factor
+      /// @param instance InstanceId representing Clause (row) in this table
+      /// @return extendedInstance InstanceId of Clause in ExtendedVarset that is associated with #instance
+      ClauseValue GetExtendedClauseValue(InstanceId instance);
 
       /// Erase all ExtendedInfo from this Factor
       void EraseExtendedInfo();

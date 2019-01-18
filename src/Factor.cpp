@@ -339,6 +339,8 @@ Factor::Normalize()
 std::shared_ptr<Factor> 
 Factor::MaximizeVar(VarId id)
 {
+
+
    if (!mBsPresent[id])
    {
       // B.A. consider creating new factor
@@ -408,6 +410,20 @@ Factor::GetExtendedClause(InstanceId instance)
    if(mExtendedClauseVector.size() <= instance)
       return 0;
    return mExtendedClauseVector[instance];
+}
+
+ClauseValue
+Factor::GetExtendedClauseValue(InstanceId instance)
+{
+   if(mExtendedClauseVector.size() <= instance)
+   {
+      return ClauseValue(GetDb());
+   }
+
+   InstanceId id = GetExtendedClause(instance);
+   Clause c(GetExtendedVarSet(), id);
+   return ClauseValue(c, Get(instance));
+
 }
 
 void

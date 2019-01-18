@@ -238,14 +238,14 @@ FactorSet::MaximizeVar(const VarSet &vs)
       // printf("===SubMerge %d ===\n%s\n", id, s.c_str());
 
       std::shared_ptr<Factor> f2 = f->MaximizeVar(id);
-      // s = f2->GetJson();
-      // printf("===SubEliminate %d ===\n%s\n", id, s.c_str());
+      //std::string s = f2->GetJson(GetDb());
+      //printf("===SubEliminate %d ===\n%s\n", id, s.c_str());
 
 
       mFactors.push_back(f2);
 
-      //s = this->GetJson();
-      // printf("===Eliminate %d ===\n%s\n", id, s.c_str());
+      //s = this->GetJson(GetDb());
+      //printf("===Eliminate %d ===\n%s\n", id, s.c_str());
 
 
       // mFactors.push_back(f);
@@ -380,16 +380,14 @@ FactorSet::BuildDecision()
             printf("!!!! Actually running maximizer for decision %d %s!!!!\n", vidDecision, mDb[vidDecision].c_str());
 
             std::shared_ptr<Factor> pFactor = (*iter2);
-            // B.A. temporary
-            std::string sDebug1 = pFactor->GetJson(mDb);
-            printf("\n Interm quest: %s", sDebug1.c_str());
+            //std::string sDebug1 = pFactor->GetJson(mDb);
+            //printf("\n Interm quest: %s", sDebug1.c_str());
 
 
             std::shared_ptr<Factor> pResult =  pFactor->MaximizeVar(vidDecision);
 
-            // B.A. temporary
-            std::string sDebug2 = pResult->GetJson(mDb);
-            printf("\n Interm result: %s\n", sDebug2.c_str());
+            //std::string sDebug2 = pResult->GetJson(mDb);
+            //printf("\n Interm result: %s\n", sDebug2.c_str());
 
             // pResult incrporates decision Function and new Factor
             // separate both

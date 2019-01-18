@@ -358,7 +358,7 @@ static void BuildDecisionCongestion(VarDb &db, int numDeflects, int numLocal, in
    std::shared_ptr<Factor> fUpdateDecision = std::make_shared<Factor>(vsUpdate, db["Update"]);
    fUpdateDecision->SetFactorType(VarType_Decision);
    m["Update"] = fUpdateDecision;
-   printf("Update size is %ld \n", vsUpdate.GetInstances());
+   //printf("Update size is %lld \n", vsUpdate.GetInstances());
 
    db.AddVar("Utility", VarType_Utility);
 
@@ -389,7 +389,7 @@ static void BuildDecisionCongestion(VarDb &db, int numDeflects, int numLocal, in
    InstanceId utilityInstance = 0;
    InstanceId maxInstance = vsUtility.GetInstances();
    
-   printf("Utility size is %d \n", maxInstance);
+   // printf("Utility size is %lld \n", maxInstance);
 
    for(utilityInstance = 0; utilityInstance < maxInstance; utilityInstance++)
    {

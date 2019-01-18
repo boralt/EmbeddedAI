@@ -166,16 +166,25 @@
 
 }
  
-
-
+#Update {
+  position: absolute;
+  left: 345px;
+  top: 460px;
+ }
  
 
+ 
+ #TestType {
+  position: absolute;
+  left: 345px;
+  top: 500px;
+ }
  
 
  
  #lpost {
   position: absolute;
-  left: 130px; 
+  left: 345px; 
   top: 550px; 
  }
 
@@ -215,6 +224,25 @@
 <input type = "text" name = "LatencyRemote-D2-R1" id="LatencyRemote-D2-R1" class="dres_lat" > <br />
 
 
+<select name="Update" id="Update" >
+  <option value="0">None</option>
+  <option value="1">Squelch Local #1</option>
+  <option value="2">Squelch Local #2</option>
+  <option value="3">Squelch Local #3</option>
+  <option value="4">Roll D1</option>
+  <option value="5">Roll D2</option>
+  
+</select>
+<br/>
+
+
+<select name="TestType" id="TestType" >
+  <option value="Find">Find All</option>
+  <option value="Defl">Deflect 1</option>
+  <option value="Conj">Optimize</option>
+  
+</select>
+<br/>
 
 <input type = "submit" value = "Submit" id="lpost" />
 </form>
@@ -237,8 +265,10 @@
   });
   
   dataPart += '"dummy":"0"}'
+  var req = $("#TestType").val();
   var posting = $.post("./cgi-bin/dvntest.exe", {
-     req: "Find",
+  //req: "Find",
+     req: req,
      data: dataPart 
   });             
   

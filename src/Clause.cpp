@@ -218,6 +218,29 @@ Clause::GetJson(const VarDb &db)const
    return s;
 }
 
+std::string
+ClauseValue::GetJson(const VarDb &db)const
+{
+   std::string s;
+   s = "{ ";
+   for (VarId id=mVarSet.GetFirst(); id != 0; id = mVarSet.GetNext(id))
+   {
+      char sz[100];
+      s += AddJsonAttr(sz, sizeof(sz), db[id].c_str(), "%d", (int) mClause[id]);
+
+   }
+
+   char tmp[100];
+   s += AddJsonAttr(tmp, sizeof(tmp), "__Prob", "%f", mVal);
+
+   s.erase(s.length() - 1);
+   s += "}";
+   return s;
+
+
+}
+
+
 Clause 
 Clause::Append(VarSet target, const Clause &cl1, const Clause &cl2)
 {

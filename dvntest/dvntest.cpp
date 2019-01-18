@@ -101,7 +101,8 @@ std::map<std::string, double> configMap;
 
 extern std::string TrafficOptimTest();
 extern std::string TrafficOptimConjTest();
-extern std::string  FailureFindTest();
+extern std::string FailureFindTest();
+extern std::string FailureDeflectFindTest();
 
 extern void initVars1();
 extern void initVars();
@@ -165,6 +166,14 @@ int main(int argc, char **argv)
 
          s=FailureFindTest();
       }
+      else if (!strncmp(argv[1], "Defl",4))
+      {
+         configMap["Drop-D1-L1-R1"] = 1;
+         //configMap["Drop-D1-L2-R1"] = 1;
+         //configMap["Drop-D2-L2-R1"] = 1;
+
+         s=FailureDeflectFindTest();
+      }
       std::cout << s.c_str();
    }
    else
@@ -220,6 +229,11 @@ int main(int argc, char **argv)
             initVars();
             sRes= FailureFindTest();
          }
+         else if (sReq == "Defl") {
+            initVars();
+            sRes = FailureDeflectFindTest();
+         }
+
          std::cout << "Content-Type:text/html:" << std::endl << std::endl;
 
          //for (auto it = configMap.begin();

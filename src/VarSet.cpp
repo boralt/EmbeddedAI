@@ -75,7 +75,9 @@ VarSet::_Add(VarId id)
 
 void 
 VarSet::Add(VarId id)
-{ 
+{
+   if (id <= 0 && id >= MAX_SET_SIZE)
+      printf("Error\n");
 	DBC_CHECK_VID(id);
    _Add(id);
 }

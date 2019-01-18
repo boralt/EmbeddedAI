@@ -227,6 +227,8 @@ static void BuildCongestion(VarDb &db, int numDeflects, int numLocal, int numRem
             }
             fConj->CompleteProbabilities();
             m[s] = fConj;
+
+
          }
       }
    }
@@ -351,11 +353,11 @@ static void BuildLatencies(VarDb &db, int numDeflects, int numLocal, int numRemo
 
                      fLat->AddInstance(idInstance, val);
                      idInstance++;
-                     if(nDeflect==1 && nLocal==1 && nRemote==1)
-                     {
+                     //if(nDeflect==1 && nLocal==1 && nRemote==1)
+                     //{
 
-                        printf("L=%d R=%d N=%d V=%f\n", nLatencyLocal, nLatencyRemote, nLatency, val);
-                     }
+                     //   printf("L=%d R=%d N=%d V=%f\n", nLatencyLocal, nLatencyRemote, nLatency, val);
+                     //}
 
                   }
                }
@@ -713,15 +715,118 @@ std::string FailureFindTest()
    s = res1->GetJson(db);
    //printf("\n==After MPE calculation ==\n%s\n", s.c_str());
 
+#if 0
    VarSet vsMpe = res1->GetExtendedVarSet();
    InstanceId instanceMpe = res1->GetExtendedClause(0);
+
+   std::cout << "Instance Id " << instanceMpe << std::endl;
+
    Clause clMpe(vsMpe, instanceMpe);
    s = clMpe.GetJson(db);
    // printf("==MPE clause ==\n%s\n", s.c_str());
 
-   return clMpe.GetJson(db);
-   
+   std::string s1 = clMpe.GetJson(db);
+#endif
+
+   ClauseValue cv = res1->GetExtendedClauseValue(0);
+   //std::string s2 =  cv.GetVarSet().GetJson(db);
+   return cv.GetJson(db);
 }
+
+
+std::string FailureDeflectFindTest()
+{
+   VarDb db;
+   FactorSet fs(db);
+   std::string s;
+
+   BuildCongestion(db, gNumDeflects, gNumLocal, gNumRemote);
+   // BuildLatencies(db, gNumDeflects, gNumLocal, gNumRemote);
+   std::for_each(std::begin(m), std::end(m), [&fs](MapFactors::const_reference it) { fs.AddFactor(it.second); });
+
+   if(gDebug) {
+      std::string sDebug = fs.GetJson(db);
+      std::cout << "FactorrSet: " << sDebug;
+   }
+
+
+   VarSet vsSample(db), vsSolve(db);
+
+
+   //for(int nDeflect = 1; nDeflect <= gNumDeflects; nDeflect++)
+   //{
+   //   s = VarName("DeflectConj", nDeflect, -1, -1);
+   //   vsSolve << db[s];
+   //}
+
+   vsSolve << db[VarName("DeflectConj", 1, -1, -1)];
+
+   VarSet varDbSet = db.GetVarSet();
+   vsSample = db.GetVarSet().Substract(vsSolve);
+
+   Clause cl(vsSample);
+
+   for (int nDeflect = 1; nDeflect <= gNumDeflects; nDeflect++)
+   {
+      for(int nLocal = 1; nLocal <= gNumLocal; nLocal++)
+      {
+         for(int nRemote = 1; nRemote <= gNumRemote; nRemote++)
+         {
+            std::string sNodeName = VarName("Drop", nDeflect, nLocal, nRemote);
+            if (configMap.count(sNodeName))
+               cl.AddVar(db[sNodeName], configMap[sNodeName]);
+            else
+               cl.AddVar(db[sNodeName], 0);
+
+//            sNodeName = VarName("Latency", nDeflect, nLocal, nRemote);
+//            if (configMap.count(sNodeName))
+//               cl.AddVar(db[sNodeName], configMap[sNodeName]);
+//            else
+//               cl.AddVar(db[sNodeName], 0);
+
+
+
+            //cl.AddVar(db[VarName("Drop", nDeflect, nLocal, nRemote)], (nDeflect==1)? 3:0);
+            //cl.AddVar(db[VarName("Latency", nDeflect, nLocal, nRemote)], 2);
+         }
+      }
+   }
+
+   fs.PruneEdges(cl);
+   fs.ApplyClause(cl);
+   //InteractionGraph ig(&fs);
+   //VarSet optVs = ig.GetElimOrder();
+   //fs.MaximizeVar(optVs);
+
+   fs.EliminateVar(vsSample);
+   fs.MaximizeVar(vsSolve);
+
+   // printf("Before merge %s\n", fs.GetJson(db).c_str());
+
+   // fs.SetDebugLevel(4);
+   std::shared_ptr<Factor> res1 = fs.Merge();
+   s = res1->GetJson(db);
+   //printf("\n==After MPE calculation ==\n%s\n", s.c_str());
+
+#if 0
+   VarSet vsMpe = res1->GetExtendedVarSet();
+   InstanceId instanceMpe = res1->GetExtendedClause(0);
+
+   std::cout << "Instance Id " << instanceMpe << std::endl;
+
+   Clause clMpe(vsMpe, instanceMpe);
+   s = clMpe.GetJson(db);
+   // printf("==MPE clause ==\n%s\n", s.c_str());
+
+   std::string s1 = clMpe.GetJson(db);
+#endif
+
+   ClauseValue cv = res1->GetExtendedClauseValue(0);
+   //std::string s2 =  cv.GetVarSet().GetJson(db);
+   return cv.GetJson(db);
+}
+
+
 
 
 std::string TrafficOptimTest()
