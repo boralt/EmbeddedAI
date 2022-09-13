@@ -56,7 +56,6 @@ Var::GetState(VarState state) const
 VarState
 Var::GetState(std::string sStateName) const
 {
-   mVarDomainStates;
    auto it = std::find(mVarDomainStates.begin(), mVarDomainStates.end(), sStateName);
    if (it == mVarDomainStates.end())
    {

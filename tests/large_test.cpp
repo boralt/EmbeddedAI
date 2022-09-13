@@ -8,6 +8,7 @@
 */
 
 #include <factor.h>
+#include <tgmath.h>
 #include <Factories.h>
 #include <json/json.h>
 #include <fstream>
